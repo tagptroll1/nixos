@@ -19,39 +19,50 @@ in {
     "${cs2DataDir}".d            = { user = "1000"; group = "1000"; mode = "0770"; };
   };
 
+  # joedwards32/cs2 uses CS2_* env vars (not SRCDS_*) — verified by reading
+  # the image's entry.sh. Only SRCDS_TOKEN (the GSLT) kept the old name.
   sops.templates."cs2.env".content = ''
     SRCDS_TOKEN=
-    SRCDS_RCONPW=${config.sops.placeholder."cs2/rcon_pw"}
-    SRCDS_PW=${config.sops.placeholder."cs2/server_pw"}
+    CS2_RCONPW=${config.sops.placeholder."cs2/rcon_pw"}
+    CS2_PW=${config.sops.placeholder."cs2/server_pw"}
   '';
 
   virtualisation.oci-containers.containers.cs2 = {
-    # joedwards32/cs2 is the de-facto community image; entrypoint runs
-    # steamcmd on start so a `podman restart cs2` is the update path.
-    # Pin a digest once first deployed (replace :latest with @sha256:...)
-    # to control when CS2 game updates land.
     image = "ghcr.io/joedwards32/cs2:latest";
     ports = [
       "127.0.0.1:27015:27015/udp"
       "127.0.0.1:27015:27015/tcp"
-      "127.0.0.1:27020:27020/udp"  # SourceTV / RCON over UDP
+      "127.0.0.1:27020:27020/udp"  # SourceTV
     ];
     environment = {
-      SRCDS_PORT = "27015";
-      SRCDS_TV_PORT = "27020";
-      SRCDS_HOSTNAME = "ybmn.no";
-      SRCDS_MAXPLAYERS = "10";
-      SRCDS_GAMETYPE = "0";   # 0 = classic
-      SRCDS_GAMEMODE = "1";   # 1 = competitive
-      SRCDS_MAP = "de_dust2";
-      SRCDS_REGION = "3";     # 3 = europe
-      SRCDS_LAN = "0";
+      CS2_PORT       = "27015";
+      TV_PORT        = "27020";
+      CS2_SERVERNAME = "ybmn.no";
+      CS2_MAXPLAYERS = "10";
+      CS2_GAMETYPE   = "0";          # 0 = classic
+      CS2_GAMEMODE   = "1";          # 1 = competitive
+      CS2_MAPGROUP   = "mg_active";  # active duty pool; first map = startmap
+      CS2_STARTMAP   = "de_dust2";   # must exist in the chosen mapgroup
+      CS2_LAN        = "0";
+      CS2_CHEATS     = "0";
+      # Logging knobs (read by entry.sh, written into server.cfg via sed):
+      CS2_LOG        = "on";
+      CS2_LOG_FILE   = "1";
+      CS2_LOG_ECHO   = "1";
     };
     environmentFiles = [
       config.sops.templates."cs2.env".path
     ];
     volumes = [
       "${cs2DataDir}:/home/steam/cs2-dedicated"
+      # Bind preset cfgs in read-only on top of the cfg dir. Inside CS2,
+      # switch with: rcon exec competitive.cfg / casual.cfg / dm.cfg /
+      # practice.cfg / aim.cfg. Then rcon changelevel <map> to apply.
+      "${./cs2-presets/competitive.cfg}:/home/steam/cs2-dedicated/game/csgo/cfg/competitive.cfg:ro"
+      "${./cs2-presets/casual.cfg}:/home/steam/cs2-dedicated/game/csgo/cfg/casual.cfg:ro"
+      "${./cs2-presets/dm.cfg}:/home/steam/cs2-dedicated/game/csgo/cfg/dm.cfg:ro"
+      "${./cs2-presets/practice.cfg}:/home/steam/cs2-dedicated/game/csgo/cfg/practice.cfg:ro"
+      "${./cs2-presets/aim.cfg}:/home/steam/cs2-dedicated/game/csgo/cfg/aim.cfg:ro"
     ];
   };
 }
