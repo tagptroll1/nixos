@@ -7,6 +7,11 @@
 		../../shared/modules/base.nix
 		../../shared/modules/overlays.nix
 		../../shared/modules/sshd.nix
+		(import ../../shared/modules/newt.nix {
+			endpoint        = "https://pangolin.yesbutmaybe.no";
+			secretIdKey     = "newt-id-media";
+			secretSecretKey = "newt-secret-media";
+		})
 
 		# Host-specific modules
 		./modules/networking.nix
@@ -16,6 +21,8 @@
 		./modules/gpu.nix
 		./modules/tailscale.nix
 		./modules/caddy.nix
+		./modules/cockpit.nix
+		./modules/cs2.nix
 		./modules/mealie.nix
 		./modules/opencloud.nix
 		./modules/immich.nix
@@ -37,6 +44,22 @@
 			sopsFile = ./secrets/caddySecret.yaml;
 			key = "token";
 			owner = "caddy";
+		};
+		"newt-id-media" = {
+			sopsFile = ./secrets/newtSecret.yaml;
+			key = "newt-id-media";
+		};
+		"newt-secret-media" = {
+			sopsFile = ./secrets/newtSecret.yaml;
+			key = "newt-secret-media";
+		};
+		"cs2/rcon_pw" = {
+			sopsFile = ./secrets/cs2Secret.yaml;
+			key = "rcon_pw";
+		};
+		"cs2/server_pw" = {
+			sopsFile = ./secrets/cs2Secret.yaml;
+			key = "server_pw";
 		};
 	};
 

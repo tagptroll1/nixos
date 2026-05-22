@@ -79,6 +79,11 @@
       "cloud.ybmn.no".extraConfig     = gated "127.0.0.1:9200";
       "collabora.ybmn.no".extraConfig = gated "127.0.0.1:9980";
       "wopi.ybmn.no".extraConfig      = gated "127.0.0.1:9300";
+      # Cockpit needs the upstream to be HTTPS-or-tell-it-it's-encrypted;
+      # the AllowUnencrypted=true cockpit setting plus ProtocolHeader handles
+      # that on the cockpit side, so a plain reverse_proxy works here.
+      # WebSocket upgrade is handled automatically by Caddy's reverse_proxy.
+      "cockpit.ybmn.no".extraConfig   = gated "127.0.0.1:9090";
     };
   };
 
