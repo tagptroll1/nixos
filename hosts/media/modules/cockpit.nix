@@ -3,11 +3,14 @@
     enable = true;
     port = 9090;
     openFirewall = false;  # reached via Caddy on cockpit.ybmn.no
+    # `allowed-origins` is the list-merging option; the module joins it
+    # with its default ("https://localhost:9090") into WebService.Origins.
+    allowed-origins = [
+      "https://cockpit.ybmn.no"
+      "wss://cockpit.ybmn.no"
+    ];
     settings = {
       WebService = {
-        # Caddy terminates TLS and forwards to localhost:9090; tell cockpit
-        # which Host header it should trust as the canonical origin.
-        Origins = "https://cockpit.ybmn.no wss://cockpit.ybmn.no";
         ProtocolHeader = "X-Forwarded-Proto";
         AllowUnencrypted = "true";  # safe: only loopback reaches the port
       };
