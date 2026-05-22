@@ -13,8 +13,10 @@ in {
   # Ports stay on 127.0.0.1; external reachability is via the Pangolin
   # `newt` tunnel (configured in default.nix). The container needs the
   # data dir owned by uid 1000 (the `steam` user inside the image).
+  # Create the parent first so the leaf doesn't fail with ENOENT.
   systemd.tmpfiles.settings."10-cs2" = {
-    "${cs2DataDir}".d = { user = "1000"; group = "1000"; mode = "0770"; };
+    "/mnt/media/games".d        = { user = "root"; group = "root"; mode = "0755"; };
+    "${cs2DataDir}".d            = { user = "1000"; group = "1000"; mode = "0770"; };
   };
 
   sops.templates."cs2.env".content = ''
