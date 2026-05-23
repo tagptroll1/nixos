@@ -10,10 +10,12 @@ in {
   virtualisation.podman.enable = true;
   virtualisation.oci-containers.backend = "podman";
 
-  # Ports stay on 127.0.0.1; external reachability is via the Pangolin
-  # `newt` tunnel (configured in default.nix). The container needs the
-  # data dir owned by uid 1000 (the `steam` user inside the image).
-  # Create the parent first so the leaf doesn't fail with ENOENT.
+  # Ports are published on all interfaces so the NetBird DNAT on pangoling
+  # can reach them via wt0. Host-level firewall still blocks 27015 on the
+  # LAN interface — only wt0 is in trustedInterfaces.
+  # The container needs the data dir owned by uid 1000 (the `steam` user
+  # inside the image). Create the parent first so the leaf doesn't fail
+  # with ENOENT.
   systemd.tmpfiles.settings."10-cs2" = {
     "/mnt/media/games".d        = { user = "root"; group = "root"; mode = "0755"; };
     "${cs2DataDir}".d            = { user = "1000"; group = "1000"; mode = "0770"; };
@@ -30,9 +32,9 @@ in {
   virtualisation.oci-containers.containers.cs2 = {
     image = "ghcr.io/joedwards32/cs2:latest";
     ports = [
-      "127.0.0.1:27015:27015/udp"
-      "127.0.0.1:27015:27015/tcp"
-      "127.0.0.1:27020:27020/udp"  # SourceTV
+      "27015:27015/udp"
+      "27015:27015/tcp"
+      "27020:27020/udp"  # SourceTV
     ];
     environment = {
       CS2_PORT       = "27015";
