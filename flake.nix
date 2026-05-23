@@ -69,6 +69,24 @@
         ];
       };
 
+      pangoling = nixpkgs.lib.nixosSystem {
+        specialArgs = {
+          inherit inputs;
+          hostConfig = hosts.pangoling;
+        };
+        modules = [
+          sops-nix.nixosModules.sops
+          ./hosts/pangoling
+          home-manager.nixosModules.home-manager
+          {
+            home-manager.useGlobalPkgs = true;
+            home-manager.useUserPackages = true;
+            home-manager.extraSpecialArgs = { inherit inputs; hostConfig = hosts.pangoling; };
+            home-manager.users.tagp = import ./home/tagp;
+          }
+        ];
+      };
+
       media = nixpkgs.lib.nixosSystem {
         specialArgs = {
           inherit inputs;
