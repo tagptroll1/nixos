@@ -13,5 +13,6 @@
 		./modules/users.nix
 		./modules/packages.nix
 		./modules/netbird.nix
+		./modules/forwarding.nix
 	];
 }

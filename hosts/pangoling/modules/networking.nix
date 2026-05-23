@@ -12,7 +12,10 @@
 			];
 			# Netbird wireguard port; the module also opens this, but listed
 			# explicitly here for clarity.
-			allowedUDPPorts = [ 51820 ];
+			allowedUDPPorts = [
+				51820  # NetBird wireguard
+				27015  # CS2 → forwarded to media (see forwarding.nix)
+			];
 		};
 		interfaces.${hostConfig.interface}.ipv4.addresses = [{
 			address = hostConfig.ip;
