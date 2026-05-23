@@ -14,5 +14,15 @@
 				destination = "100.122.55.95:27015";
 			}
 		];
+
+		# Source-NAT forwarded traffic to media so reply packets come back
+		# through pangoling instead of media's default gateway (otherwise
+		# the client never sees the response and the connection times out).
+		extraCommands = ''
+			iptables -t nat -A POSTROUTING -o wt0 -d 100.122.55.95 -p udp --dport 27015 -j MASQUERADE
+		'';
+		extraStopCommands = ''
+			iptables -t nat -D POSTROUTING -o wt0 -d 100.122.55.95 -p udp --dport 27015 -j MASQUERADE || true
+		'';
 	};
 }
