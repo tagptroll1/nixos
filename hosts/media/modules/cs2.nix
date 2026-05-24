@@ -44,6 +44,11 @@ in {
     "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${adminsJson} ${cs2CustomDir}/addons/counterstrikesharp/configs/admins.json"
     "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${workshopCollections} ${cs2CustomDir}/subscribed_collection_ids.txt"
     "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${workshopFiles} ${cs2CustomDir}/subscribed_file_ids.txt"
+    # Override gamemodes_server.txt so Casual's mg_comp mapgroup contains only
+    # our 9 TV2 workshop maps (kus ships ~22 random community maps in mg_comp
+    # which pollute the !rtv / !maps vote pool). mg_active stays as the 7
+    # active-duty maps, so Casual = 7 active duty + 9 workshop = 16 total.
+    "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${./cs2-presets/gamemodes_server.txt} ${cs2CustomDir}/gamemodes_server.txt"
   ];
 
   # kus image env var names. API_KEY required for workshop downloads — get one
