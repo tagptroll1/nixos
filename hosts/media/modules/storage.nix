@@ -33,8 +33,21 @@ in {
     (virtiofs "tagp"     "/mnt/tagp")
     // (virtiofs "karoline" "/mnt/karoline")
     // (virtiofs "media"  "/mnt/media")
+    // (virtiofs "games"  "/mnt/games")
     // (bind "/mnt/tagp/photos" "/var/lib/immich/library/${labels.tagp}")
     // (bind "/mnt/karoline/photos" "/var/lib/immich/library/${labels.karoline}");
+
+  # Mirror the Debian default `games` user (uid 5 / gid 60) so file ownership
+  # is consistent between home02 (via virtiofs) and what shows up in /mnt/games
+  # on the VM. tagp gets group membership for direct access.
+  users.users.games = {
+    isSystemUser = true;
+    uid = 5;
+    group = "games";
+    description = "shared owner of game-server data on /mnt/games";
+  };
+  users.groups.games.gid = 60;
+  users.users.tagp.extraGroups = [ "games" ];
 
   systemd.tmpfiles.settings = {
     "10-immich-library" = {

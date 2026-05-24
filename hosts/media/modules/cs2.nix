@@ -1,16 +1,11 @@
 { config, pkgs, ... }:
 let
-  # Switched from joedwards32/cs2 (vanilla dedicated) to kus/cs2-modded-server
-  # because joedwards32's metamod folder-enum issue on this host kept blocking
-  # CSS#/SimpleAdmin/RTV from loading. kus ships MetaMod + CSS# preinstalled
-  # and is purpose-built for the modded workflow we want.
-  #
-  # Data dir is fresh (not the old /mnt/media/games/cs2 vanilla install) so
-  # the kus image gets a clean SteamCMD run on its own expected layout.
-  # The old dir is left in place at /mnt/media/games/cs2 as a backup —
-  # delete it manually once the new server is working.
-  cs2DataDir   = "/mnt/media/games/cs2-modded";
-  cs2CustomDir = "/mnt/media/games/cs2-modded-custom";
+  # Lives on the dedicated `games` virtiofs share (see storage.nix and
+  # docs/private/proxmox-virtiofs-shares.md). Keeping cs2 off /mnt/media
+  # avoids the systemd-tmpfiles "unsafe path transition" issue that triggers
+  # when crossing the immich-owned /mnt/media into game-server-owned subdirs.
+  cs2DataDir   = "/mnt/games/cs2-modded";
+  cs2CustomDir = "/mnt/games/cs2-modded-custom";
 
   # Preseeded admin file dropped into custom_files so tagp is root admin from
   # first boot, before the server even exists to RCON into.
@@ -22,24 +17,23 @@ let
     };
   });
 in {
-  virtualisation.podman.enable  = true;
-  virtualisation.oci-containers.backend = "podman";
+  virtualisation.podman.enable          = true;
+  virtualisation.oci-containers.backend  = "podman";
 
-  systemd.tmpfiles.settings."10-cs2" = {
-    "/mnt/media/games".d = { user = "root"; group = "root"; mode = "0755"; };
-    "${cs2DataDir}".d    = { user = "1000"; group = "1000"; mode = "0770"; };
-    "${cs2CustomDir}".d  = { user = "1000"; group = "1000"; mode = "0770"; };
-    # CSS# admin config — overlays into the container's
-    # /home/custom_files/addons/counterstrikesharp/configs/admins.json
-    "${cs2CustomDir}/addons".d                                                     = { user = "1000"; group = "1000"; mode = "0770"; };
-    "${cs2CustomDir}/addons/counterstrikesharp".d                                  = { user = "1000"; group = "1000"; mode = "0770"; };
-    "${cs2CustomDir}/addons/counterstrikesharp/configs".d                          = { user = "1000"; group = "1000"; mode = "0770"; };
-    "${cs2CustomDir}/addons/counterstrikesharp/configs/admins.json"."L+".argument  = "${adminsJson}";
-  };
+  # Bind-mounted dirs created at service start instead of via tmpfiles —
+  # tmpfiles refuses to chown across ownership transitions, and the games
+  # virtiofs root is `games`-owned while parents are root-owned. ExecStartPre
+  # runs as root and gets to ignore that check.
+  #
+  # Mode 2770: setgid so any files podman creates inherit the games group,
+  # giving tagp shell access without chmod gymnastics.
+  systemd.services.podman-cs2.serviceConfig.ExecStartPre = [
+    "${pkgs.coreutils}/bin/install -d -o games -g games -m 2770 ${cs2DataDir} ${cs2CustomDir} ${cs2CustomDir}/addons ${cs2CustomDir}/addons/counterstrikesharp ${cs2CustomDir}/addons/counterstrikesharp/configs"
+    "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${adminsJson} ${cs2CustomDir}/addons/counterstrikesharp/configs/admins.json"
+  ];
 
-  # kus image env var names (NOT CS2_*). API_KEY is required for workshop
-  # downloads — register one at https://steamcommunity.com/dev/apikey and
-  # add to sops as cs2/api_key.
+  # kus image env var names. API_KEY required for workshop downloads — get one
+  # from https://steamcommunity.com/dev/apikey and store as cs2/api_key in sops.
   sops.templates."cs2.env".content = ''
     RCON_PASSWORD=${config.sops.placeholder."cs2/rcon_pw"}
     SERVER_PASSWORD=${config.sops.placeholder."cs2/server_pw"}
