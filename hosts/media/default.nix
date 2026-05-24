@@ -62,6 +62,10 @@
 			sopsFile = ./secrets/cs2Secret.yaml;
 			key = "server_pw";
 		};
+		"cs2/api_key" = {
+			sopsFile = ./secrets/cs2Secret.yaml;
+			key = "api_key";
+		};
 	};
 
 	services.qemuGuest.enable = true;
