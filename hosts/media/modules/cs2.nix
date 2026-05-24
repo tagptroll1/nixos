@@ -49,6 +49,10 @@ in {
     # which pollute the !rtv / !maps vote pool). mg_active stays as the 7
     # active-duty maps, so Casual = 7 active duty + 9 workshop = 16 total.
     "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${./cs2-presets/gamemodes_server.txt} ${cs2CustomDir}/gamemodes_server.txt"
+    # GameModeManager config — kus default but with OptionsInCoolDown=0 so
+    # !nominate / !rtv don't exclude recently-played maps from the menu.
+    "${pkgs.coreutils}/bin/install -d -o games -g games -m 2770 ${cs2CustomDir}/addons/counterstrikesharp/configs/plugins ${cs2CustomDir}/addons/counterstrikesharp/configs/plugins/GameModeManager"
+    "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${./cs2-presets/GameModeManager.json} ${cs2CustomDir}/addons/counterstrikesharp/configs/plugins/GameModeManager/GameModeManager.json"
   ];
 
   # kus image env var names. API_KEY required for workshop downloads — get one
