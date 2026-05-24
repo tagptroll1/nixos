@@ -53,6 +53,10 @@ in {
     # !nominate / !rtv don't exclude recently-played maps from the menu.
     "${pkgs.coreutils}/bin/install -d -o games -g games -m 2770 ${cs2CustomDir}/addons/counterstrikesharp/configs/plugins ${cs2CustomDir}/addons/counterstrikesharp/configs/plugins/GameModeManager"
     "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${./cs2-presets/GameModeManager.json} ${cs2CustomDir}/addons/counterstrikesharp/configs/plugins/GameModeManager/GameModeManager.json"
+    # mp_warmuptime override (default 60 → 30) and other server-wide tweaks.
+    # cfg/custom_all.cfg is execed after server.cfg for every gamemode.
+    "${pkgs.coreutils}/bin/install -d -o games -g games -m 2770 ${cs2CustomDir}/cfg"
+    "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${./cs2-presets/custom_all.cfg} ${cs2CustomDir}/cfg/custom_all.cfg"
   ];
 
   # kus image env var names. API_KEY required for workshop downloads — get one

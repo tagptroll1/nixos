@@ -18,7 +18,7 @@
     "ExtendTime": 10,
     "ExtendRounds": 5,
     "ModePercentage": 40,
-    "EnabledInWarmup": false,
+    "EnabledInWarmup": true,
     "HideHudAfterVote": false,
     "NominationEnabled": true,
     "MaxNominationWinners": 1,
