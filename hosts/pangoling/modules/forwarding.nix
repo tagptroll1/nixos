@@ -18,11 +18,21 @@
 		# Source-NAT forwarded traffic to media so reply packets come back
 		# through pangoling instead of media's default gateway (otherwise
 		# the client never sees the response and the connection times out).
+		#
+		# Also hairpin-DNAT for traffic arriving via wt0: a netbird client
+		# using pangoling as exit/relay routes traffic to pangoling's public
+		# IP through the overlay, so packets land on wt0 not ens18 and the
+		# networking.nat-generated -i ens18 PREROUTING rule never fires.
+		# `--dst-type LOCAL` scopes it to packets actually destined for
+		# pangoling itself (any local IP), so overlay → overlay traffic for
+		# other hosts is untouched.
 		extraCommands = ''
 			iptables -t nat -A POSTROUTING -o wt0 -d 100.122.55.95 -p udp --dport 27015 -j MASQUERADE
+			iptables -t nat -A PREROUTING -i wt0 -p udp --dport 27015 -m addrtype --dst-type LOCAL -j DNAT --to-destination 100.122.55.95:27015
 		'';
 		extraStopCommands = ''
 			iptables -t nat -D POSTROUTING -o wt0 -d 100.122.55.95 -p udp --dport 27015 -j MASQUERADE || true
+			iptables -t nat -D PREROUTING -i wt0 -p udp --dport 27015 -m addrtype --dst-type LOCAL -j DNAT --to-destination 100.122.55.95:27015 || true
 		'';
 	};
 }
