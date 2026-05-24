@@ -111,8 +111,7 @@
       "Config": "competitive.cfg",
       "DefaultMap": "de_inferno",
       "MapGroups": [
-        "mg_active",
-        "mg_comp"
+        "mg_active"
       ]
     },
     "MapGroupFile": "gamemodes_server.txt",
@@ -139,7 +138,7 @@
         "Config": "competitive.cfg",
         "DefaultMap": "de_inferno",
         "MapGroups": [
-          "mg_comp"
+          "mg_active"
         ]
       },
       {
@@ -241,9 +240,25 @@
       {
         "Name": "Hide N Seek",
         "Config": "hns.cfg",
-        "DefaultMap": "3348038890",
+        "DefaultMap": "3097563690",
         "MapGroups": [
           "mg_hns"
+        ]
+      },
+      {
+        "Name": "Prophunt",
+        "Config": "hns.cfg",
+        "DefaultMap": "3608612434",
+        "MapGroups": [
+          "mg_prophunt"
+        ]
+      },
+      {
+        "Name": "Office",
+        "Config": "competitive.cfg",
+        "DefaultMap": "3346403247",
+        "MapGroups": [
+          "mg_office"
         ]
       },
       {

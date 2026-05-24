@@ -56,7 +56,7 @@
 					"mapgroupsMP"
 					{
 						// team lobby map veto
-						"mg_comp"			"50"
+						"mg_active"			"50"
 					}
 				}
 
@@ -532,11 +532,29 @@
 			"displayname"			"Hide n Seek"
 			"maps"
 			{
-				"workshop/3366748499/de_nuke_prophunt"		""
-				"workshop/3382166635/de_overpass_prophunt"		""
-				"workshop/3348038890/de_inferno_prophunt"		""
-				"workshop/3292648008/de_vertigo_prophunt"		""
-				"workshop/3287578956/de_mirage_prophunt"		""
+				"workshop/3354500067/dust2_hide_and_seek"		""
+				"workshop/3097563690/infernohideandseek"		""
+				"workshop/3235547383/seek_mirage"		""
+			}
+		}
+		"mg_prophunt"
+		{
+			"name"			"mg_prophunt"
+			"displayname"			"Prophunt"
+			"maps"
+			{
+				"workshop/3608612434/prophunt_inferno"		""
+				"workshop/3615968422/prophunt_mirage"		""
+				"workshop/3306768315/denhet_genshin_impact_prophunt"		""
+			}
+		}
+		"mg_office"
+		{
+			"name"			"mg_office"
+			"displayname"			"Office Tower"
+			"maps"
+			{
+				"workshop/3346403247/dm_office_tower"		""
 			}
 		}
 		"mg_soccer"
