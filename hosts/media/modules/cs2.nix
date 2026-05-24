@@ -47,8 +47,9 @@ in {
     # cfg/custom_all.cfg is execed after server.cfg for every gamemode.
     "${pkgs.coreutils}/bin/install -d -o games -g games -m 2770 ${cs2CustomDir}/cfg"
     "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${./cs2-presets/custom_all.cfg} ${cs2CustomDir}/cfg/custom_all.cfg"
-    # Move our competitive config over
-		"${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${./cs2-presets/competitive.cfg} ${cs2CustomDir}/cfg/competitive.cfg"
+    # Competitive overrides — exec'd by the kus comp.cfg → comp_settings.cfg
+    # chain (after gamemode_competitive.cfg, re-applied after map start).
+		"${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${./cs2-presets/custom_comp.cfg} ${cs2CustomDir}/cfg/custom_comp.cfg"
   ];
 
   # kus image env var names. API_KEY required for workshop downloads — get one

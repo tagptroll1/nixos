@@ -108,7 +108,7 @@
     "Style": "button",
     "Default": {
       "Name": "Competitive",
-      "Config": "competitive.cfg",
+      "Config": "comp.cfg",
       "DefaultMap": "de_inferno",
       "MapGroups": [
         "mg_active"
@@ -135,7 +135,7 @@
       },
       {
         "Name": "Competitive",
-        "Config": "competitive.cfg",
+        "Config": "comp.cfg",
         "DefaultMap": "de_inferno",
         "MapGroups": [
           "mg_active"
