@@ -18,7 +18,7 @@ buildDotnetModule (finalAttrs: {
     owner = "exkludera-cssharp";
     repo = "PropHunt";
     rev = "c9157160dab4c1da1006d86b88659d4a85c39d9d";
-    hash = lib.fakeHash; # TODO: replace with the hash nix prints on first build
+    hash = "sha256-qIbP6Y7q0DRxOKpXuWsC2XYC5hSZclqYhvRIY4o74RA=";
   };
 
   projectFile = "src/PropHunt.csproj";
