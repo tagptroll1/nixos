@@ -51,6 +51,10 @@ in {
       CS2_LOG        = "on";
       CS2_LOG_FILE   = "1";
       CS2_LOG_ECHO   = "1";
+      # Workshop collection 3731836451 — pulled by SteamCMD at container boot
+      # so all maps in the collection are available alongside the vanilla pool.
+      # Switch to them via the in-game admin menu / RTV vote (CSS# plugins).
+      CS2_HOST_WORKSHOP_COLLECTION = "3731836451";
     };
     environmentFiles = [
       config.sops.templates."cs2.env".path
