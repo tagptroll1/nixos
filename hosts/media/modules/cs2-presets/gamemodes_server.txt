@@ -50,7 +50,7 @@
 					"exec"
 					{
 						// "exec" "gamemode_competitive_last.cfg"
-						"exec" "competitive.cfg"
+						"exec" "competitive_last.cfg"
 					}
 					// Map groups for online modes
 					"mapgroupsMP"
