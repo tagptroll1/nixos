@@ -22,7 +22,7 @@
     "HideHudAfterVote": false,
     "NominationEnabled": true,
     "MaxNominationWinners": 1,
-    "ChangeImmediately": false,
+    "ChangeImmediately": true,
     "TriggerKillsBeforeEnd": 13,
     "TriggerRoundsBeforeEnd": 2,
     "TriggerSecondsBeforeEnd": 120
