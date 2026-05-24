@@ -8,7 +8,7 @@
       "Time": 30,
       "DecoyLimit": 2,
       "SwapLimit": 10,
-      "TauntLimit": 10
+      "TauntLimit": 0
     }
   },
   "Sounds": {

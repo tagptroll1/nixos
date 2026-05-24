@@ -76,16 +76,23 @@ public partial class Plugin
         var data = Hider(player);
         if (data == null) return;
 
-        if (data.Taunts <= 0)
+        // TauntLimit <= 0 in PropHunt.json => unlimited taunts.
+        bool unlimited = Instance.Config.Settings.Hiding.TauntLimit <= 0;
+        if (!unlimited)
         {
-            Utils.PrintToChat(player!, $"{ChatColors.Grey}No taunts left");
-            return;
+            if (data.Taunts <= 0)
+            {
+                Utils.PrintToChat(player!, $"{ChatColors.Grey}No taunts left");
+                return;
+            }
+            data.Taunts--;
         }
 
-        data.Taunts--;
         var sounds = Instance.Config.Sounds.Taunt;
         player!.EmitSound(sounds[Random.Shared.Next(sounds.Count)]);
-        Utils.PrintToChat(player, $"{ChatColors.Grey}Used taunt. You have {data.Taunts} left");
+        Utils.PrintToChat(player, unlimited
+            ? $"{ChatColors.Grey}Taunt!"
+            : $"{ChatColors.Grey}Used taunt. You have {data.Taunts} left");
     }
 
     [ConsoleCommand("css_phswap", "Prop Hunt: swap to a random prop model")]
