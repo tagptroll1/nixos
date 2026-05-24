@@ -107,7 +107,8 @@ the line to the relevant `mg_*` group — see *Adding/changing maps* below.
 | `hosts/media/modules/cs2-presets/gamemodes_server.txt` | Map pool override — stock kus pool + our `mg_hns` (3 HnS maps) + new `mg_prophunt` (normal maps for the plugin). Workshop maps referenced directly by id — no collection. |
 | `hosts/media/modules/cs2-presets/GameModeManager.json` | Stock GMM config + an added **Prop Hunt** mode (`prophunt.cfg`, `mg_prophunt`). `ChangeImmediately`/`EnabledInWarmup` set true. |
 | `hosts/media/modules/cs2-presets/prophunt*.cfg`, `unload_plugins.cfg` | Prop Hunt mode cfg chain + the unload override that gates the plugin (see Prop Hunt section). |
-| `hosts/media/modules/cs2-presets/PropHunt.json`, `prophunt-maps/*.txt` | PropHunt plugin config + per-map prop-model lists. |
+| `hosts/media/modules/cs2-presets/PropHunt.json`, `prophunt-maps/*.txt`, `gamedata_prophunt.json` | PropHunt plugin config, per-map prop-model lists, gamedata offsets. |
+| `pkgs/cs2-prophunt/` | Builds the patched PropHunt plugin from source (`default.nix` + `Commands.cs` + `deps.json`); exposed as flake package `cs2-prophunt`. |
 | `hosts/media/modules/storage.nix` | `games` virtiofs mount + matching `games` user/group (uid 5 / gid 60) + `tagp` in games group |
 | `hosts/media/default.nix` | sops mapping `cs2/api_key` |
 | `hosts/media/secrets/cs2Secret.yaml` | Encrypted secrets: `rcon_pw`, `server_pw`, `api_key` |
@@ -195,11 +196,16 @@ The plugin turns hiders into physics props on **normal** maps.
 
 How it's wired:
 
-- **Binaries** are fetched reproducibly in `cs2.nix` (`unpackZip` → `fetchurl`
-  with pinned zip hashes) and dropped into custom_files by the `seedPlugins`
-  script: `PropHunt` into `plugins/disabled/` (gated), `CS2MenuManager` (its
-  menu dependency, not in the kus image) into active `plugins/` + `shared/`.
-  MultiAddonManager (the other dependency) already ships in the image.
+- **Built from source, patched.** The upstream release only exposes the hider
+  actions as chat-driven menu items (`!1`..`!4`) — dumb. So we build the plugin
+  from source (`pkgs/cs2-prophunt/`) with a patch (`Commands.cs` + a
+  `substituteInPlace` that disables the auto-menu) that adds **bindable console
+  commands**: `css_phfreeze`, `css_phdecoy`, `css_phtaunt`, `css_phswap`. See
+  *Building the prophunt plugin* below for the one-time hash/lock generation.
+- **Binaries** land in custom_files via `seedPlugins`: the built `PropHunt.dll`
+  (+ `.deps.json`) into `plugins/disabled/` (gated), and `CS2MenuManager`
+  (still linked even with the menu disabled; prebuilt zip, pinned hash) into
+  active `plugins/` + `shared/`. MultiAddonManager already ships in the image.
 - **Gated load:** `prophunt.cfg` does `css_plugins load "plugins/disabled/PropHunt/PropHunt.dll"`
   and registers the mode with `css_gamemode "Prop Hunt"`. Our `unload_plugins.cfg`
   override adds `css_plugins unload "Prop Hunt"`, so switching to any other mode
@@ -208,6 +214,19 @@ How it's wired:
   `custom_prophunt.cfg` (your tuning point).
 - **Gameplay knobs** (hiding team/time, decoy/swap/taunt limits, sounds) live in
   `cs2-presets/PropHunt.json`.
+
+**Hotkeys (client-side).** The commands are bound by each *player* in their own
+console/autoexec (a server can't set client binds):
+
+```
+bind "f1" "css_phfreeze"   // freeze prop in place (toggle)
+bind "f2" "css_phdecoy"    // drop a decoy
+bind "f3" "css_phtaunt"    // taunt sound
+bind "f4" "css_phswap"     // swap to a random prop model
+```
+
+If a client build doesn't forward console commands to the server, use the chat
+form instead: `bind "f1" "say !phfreeze"` (and `!phdecoy` / `!phtaunt` / `!phswap`).
 
 **Prop models per map.** The plugin reads `plugins/PropHunt/maps/<mapname>.txt`
 (newline-separated `.vmdl` paths) *and* auto-harvests the map's own
@@ -224,10 +243,36 @@ How it's wired:
   `gamemodes_server.txt`, create `cs2-presets/prophunt-maps/<map>.txt`, and add
   an `install` line for it in `cs2.nix`.
 
-**Bumping plugin versions.** Update the `url` + `hash` in `cs2.nix` for
-`propHunt` / `cs2MenuManager`. Compute the SRI hash of the release zip with:
-`sha256-$(curl -sL <zip-url> | openssl dgst -sha256 -binary | openssl base64 -A)`.
-PropHunt is **alpha (v0.0.1)** — expect rough edges.
+### Building the prophunt plugin
+
+PropHunt is built by `pkgs/cs2-prophunt/default.nix` (`buildDotnetModule`). Two
+values are **TOFU** and must be generated once on a host with nix (e.g. `media`),
+because the workstation has no nix:
+
+```bash
+# On media, in the repo:
+# 1. Source hash — build once; nix aborts with the correct sha256. Paste it into
+#    pkgs/cs2-prophunt/default.nix (src.hash, replacing lib.fakeHash).
+nix build .#cs2-prophunt 2>&1 | grep -A2 'got:'
+
+# 2. NuGet lock — generate deps.json (CounterStrikeSharp.API + CS2MenuManager).
+nix build .#cs2-prophunt.fetch-deps && ./result pkgs/cs2-prophunt/deps.json
+
+# 3. Now it builds for real:
+nix build .#cs2-prophunt   # → result/lib/cs2-prophunt/PropHunt.dll
+```
+
+Commit `default.nix` (with the real hash) + `deps.json`. To **bump the plugin**,
+change `src.rev`/`version`, redo steps 1–2.
+
+> The built DLL is copied from `result/lib/cs2-prophunt/PropHunt.dll`. If
+> `buildDotnetModule` lands it elsewhere, `ls result/lib/*/` and adjust the path
+> in `seedPlugins` (`cs2.nix`).
+
+For **CS2MenuManager** (still a fetched prebuilt zip), bump the `url` + `hash`
+in `cs2.nix`; SRI hash = `sha256-$(curl -sL <zip-url> | openssl dgst -sha256 -binary | openssl base64 -A)`.
+
+PropHunt is **alpha** — expect rough edges.
 
 [ph]: https://github.com/exkludera-cssharp/PropHunt
 
