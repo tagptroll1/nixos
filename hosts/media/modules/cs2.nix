@@ -1,74 +1,71 @@
-{ config, ... }:
+{ config, pkgs, ... }:
 let
-  # ~40 GB game install — almost entirely Steam-redownloadable content, so
-  # parked on `/mnt/media` (bulk dataset, not in the Tier-A backup set) to
-  # avoid burning Hetzner Storage Box space on data SteamCMD can refetch.
-  # If you ever want to back up server.cfg / custom maps, snapshot the
-  # `game/csgo/cfg/` and `game/csgo/maps/` subdirs only.
-  cs2DataDir = "/mnt/media/games/cs2";
+  # Switched from joedwards32/cs2 (vanilla dedicated) to kus/cs2-modded-server
+  # because joedwards32's metamod folder-enum issue on this host kept blocking
+  # CSS#/SimpleAdmin/RTV from loading. kus ships MetaMod + CSS# preinstalled
+  # and is purpose-built for the modded workflow we want.
+  #
+  # Data dir is fresh (not the old /mnt/media/games/cs2 vanilla install) so
+  # the kus image gets a clean SteamCMD run on its own expected layout.
+  # The old dir is left in place at /mnt/media/games/cs2 as a backup —
+  # delete it manually once the new server is working.
+  cs2DataDir   = "/mnt/media/games/cs2-modded";
+  cs2CustomDir = "/mnt/media/games/cs2-modded-custom";
+
+  # Preseeded admin file dropped into custom_files so tagp is root admin from
+  # first boot, before the server even exists to RCON into.
+  adminsJson = pkgs.writeText "cs2-admins.json" (builtins.toJSON {
+    tagp = {
+      identity = "76561198012874054";
+      immunity = 100;
+      flags    = [ "@css/root" ];
+    };
+  });
 in {
-  virtualisation.podman.enable = true;
+  virtualisation.podman.enable  = true;
   virtualisation.oci-containers.backend = "podman";
 
-  # Ports are published on all interfaces so the NetBird DNAT on pangoling
-  # can reach them via wt0. Host-level firewall still blocks 27015 on the
-  # LAN interface — only wt0 is in trustedInterfaces.
-  # The container needs the data dir owned by uid 1000 (the `steam` user
-  # inside the image). Create the parent first so the leaf doesn't fail
-  # with ENOENT.
   systemd.tmpfiles.settings."10-cs2" = {
-    "/mnt/media/games".d        = { user = "root"; group = "root"; mode = "0755"; };
-    "${cs2DataDir}".d            = { user = "1000"; group = "1000"; mode = "0770"; };
+    "/mnt/media/games".d = { user = "root"; group = "root"; mode = "0755"; };
+    "${cs2DataDir}".d    = { user = "1000"; group = "1000"; mode = "0770"; };
+    "${cs2CustomDir}".d  = { user = "1000"; group = "1000"; mode = "0770"; };
+    # CSS# admin config — overlays into the container's
+    # /home/custom_files/addons/counterstrikesharp/configs/admins.json
+    "${cs2CustomDir}/addons".d                                                     = { user = "1000"; group = "1000"; mode = "0770"; };
+    "${cs2CustomDir}/addons/counterstrikesharp".d                                  = { user = "1000"; group = "1000"; mode = "0770"; };
+    "${cs2CustomDir}/addons/counterstrikesharp/configs".d                          = { user = "1000"; group = "1000"; mode = "0770"; };
+    "${cs2CustomDir}/addons/counterstrikesharp/configs/admins.json"."L+".argument  = "${adminsJson}";
   };
 
-  # joedwards32/cs2 uses CS2_* env vars (not SRCDS_*) — verified by reading
-  # the image's entry.sh. Only SRCDS_TOKEN (the GSLT) kept the old name.
+  # kus image env var names (NOT CS2_*). API_KEY is required for workshop
+  # downloads — register one at https://steamcommunity.com/dev/apikey and
+  # add to sops as cs2/api_key.
   sops.templates."cs2.env".content = ''
-    SRCDS_TOKEN=
-    CS2_RCONPW=${config.sops.placeholder."cs2/rcon_pw"}
-    CS2_PW=${config.sops.placeholder."cs2/server_pw"}
+    RCON_PASSWORD=${config.sops.placeholder."cs2/rcon_pw"}
+    SERVER_PASSWORD=${config.sops.placeholder."cs2/server_pw"}
+    API_KEY=${config.sops.placeholder."cs2/api_key"}
+    STEAM_ACCOUNT=
   '';
 
   virtualisation.oci-containers.containers.cs2 = {
-    image = "ghcr.io/joedwards32/cs2:latest";
+    image = "ghcr.io/kus/cs2-modded-server:latest";
     ports = [
       "27015:27015/udp"
       "27015:27015/tcp"
       "27020:27020/udp"  # SourceTV
     ];
     environment = {
-      CS2_PORT       = "27015";
-      TV_PORT        = "27020";
-      CS2_SERVERNAME = "ybmn.no";
-      CS2_MAXPLAYERS = "10";
-      CS2_GAMETYPE   = "0";          # 0 = classic
-      CS2_GAMEMODE   = "1";          # 1 = competitive
-      CS2_MAPGROUP   = "mg_active";  # active duty pool; first map = startmap
-      CS2_STARTMAP   = "de_dust2";   # must exist in the chosen mapgroup
-      CS2_LAN        = "0";
-      CS2_CHEATS     = "0";
-      # Logging knobs (read by entry.sh, written into server.cfg via sed):
-      CS2_LOG        = "on";
-      CS2_LOG_FILE   = "1";
-      CS2_LOG_ECHO   = "1";
-      # Workshop collection 3731836451 — pulled by SteamCMD at container boot
-      # so all maps in the collection are available alongside the vanilla pool.
-      # Switch to them via the in-game admin menu / RTV vote (CSS# plugins).
-      CS2_HOST_WORKSHOP_COLLECTION = "3731836451";
+      PORT       = "27015";
+      TICKRATE   = "128";
+      MAXPLAYERS = "10";
+      LAN        = "0";
     };
     environmentFiles = [
       config.sops.templates."cs2.env".path
     ];
     volumes = [
-      "${cs2DataDir}:/home/steam/cs2-dedicated"
-      # Bind preset cfgs in read-only on top of the cfg dir. Inside CS2,
-      # switch with: rcon exec competitive.cfg / casual.cfg / dm.cfg /
-      # practice.cfg / aim.cfg. Then rcon changelevel <map> to apply.
-      "${./cs2-presets/competitive.cfg}:/home/steam/cs2-dedicated/game/csgo/cfg/competitive.cfg:ro"
-      "${./cs2-presets/casual.cfg}:/home/steam/cs2-dedicated/game/csgo/cfg/casual.cfg:ro"
-      "${./cs2-presets/dm.cfg}:/home/steam/cs2-dedicated/game/csgo/cfg/dm.cfg:ro"
-      "${./cs2-presets/practice.cfg}:/home/steam/cs2-dedicated/game/csgo/cfg/practice.cfg:ro"
-      "${./cs2-presets/aim.cfg}:/home/steam/cs2-dedicated/game/csgo/cfg/aim.cfg:ro"
+      "${cs2DataDir}:/home/steam"
+      "${cs2CustomDir}:/home/custom_files"
     ];
   };
 }
