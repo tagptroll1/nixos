@@ -5,3 +5,6 @@
 *.tmp.*
 *.age
 docs/private/
+
+# Static asset checked in despite the *.txt blanket ignore
+!hosts/media/modules/cs2-presets/gamemodes_server.txt
