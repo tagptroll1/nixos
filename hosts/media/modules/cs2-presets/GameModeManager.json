@@ -10,7 +10,7 @@
     "VoteDuration": 60,
     "OptionsToShow": 15,
     "VotePercentage": 51,
-    "OptionsInCoolDown": 0,
+    "OptionsInCoolDown": 3,
     "EndOfMapVote": true,
     "IncludeModes": false,
     "IncludeExtend": true,
@@ -105,13 +105,14 @@
     ]
   },
   "GameModes": {
-    "Style": "button",
+    "Style": "center",
     "Default": {
-      "Name": "Competitive",
-      "Config": "comp.cfg",
-      "DefaultMap": "de_inferno",
+      "Name": "Casual",
+      "Config": "casual.cfg",
+      "DefaultMap": null,
       "MapGroups": [
-        "mg_active"
+        "mg_active",
+        "mg_comp"
       ]
     },
     "MapGroupFile": "gamemodes_server.txt",
@@ -129,8 +130,7 @@
         "Config": "deathmatch.cfg",
         "DefaultMap": "de_dust2",
         "MapGroups": [
-          "mg_dm",
-					"mg_comp"
+          "mg_dm"
         ]
       },
       {
@@ -138,7 +138,7 @@
         "Config": "comp.cfg",
         "DefaultMap": "de_inferno",
         "MapGroups": [
-          "mg_active"
+          "mg_comp"
         ]
       },
       {
@@ -240,25 +240,17 @@
       {
         "Name": "Hide N Seek",
         "Config": "hns.cfg",
-        "DefaultMap": "3097563690",
+        "DefaultMap": "3354500067",
         "MapGroups": [
           "mg_hns"
         ]
       },
       {
-        "Name": "Prophunt",
-        "Config": "hns.cfg",
-        "DefaultMap": "3608612434",
+        "Name": "Prop Hunt",
+        "Config": "prophunt.cfg",
+        "DefaultMap": "de_dust2",
         "MapGroups": [
           "mg_prophunt"
-        ]
-      },
-      {
-        "Name": "Office",
-        "Config": "competitive.cfg",
-        "DefaultMap": "3346403247",
-        "MapGroups": [
-          "mg_office"
         ]
       },
       {

@@ -1,0 +1,12 @@
+// PropHunt prop-model list for de_nuke.
+// The plugin AUTO-HARVESTS this map's own prop_physics_multiplayer models at
+// runtime (watch server log for "(OnEntitySpawned) added: <model>"), so this
+// list only needs to seed/supplement. Lines must end in .vmdl; // and # are
+// comments. The one active line below is the plugin's shipped, known-valid
+// model so the prop pool is never empty before auto-harvest populates it.
+// To add map-accurate props: copy real paths from the log lines above into here
+// (uncomment / add), redeploy, restart. Wrong paths fail safe (skipped).
+models/props/de_dust/hr_dust/dust_soccerball/dust_soccer_ball001.vmdl
+// candidates to verify from logs, e.g.:
+// models/props/de_nuke/hr_nuke/nuke_crate/nuke_crate_a.vmdl
+// models/props/de_nuke/hr_nuke/nuke_barrel/nuke_barrel_a.vmdl

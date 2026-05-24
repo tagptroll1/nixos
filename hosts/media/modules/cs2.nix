@@ -17,12 +17,47 @@ let
     };
   });
 
-  # Workshop collection 3731836451 (TV2 maps — 9 maps for prophunt / hide-and-seek
-  # / movement). MultiAddonManager (bundled with kus image) pulls all maps in the
-  # collection. Browse them in-game via the !maps / !nominate vote menus alongside
-  # the vanilla active-duty pool.
-  workshopCollections = pkgs.writeText "subscribed_collection_ids.txt" ''
-    3731836451
+  cssDir = "${cs2CustomDir}/addons/counterstrikesharp";
+
+  # --- Prop Hunt --------------------------------------------------------------
+  # Server-side prophunt via the exkludera PropHunt plugin (runs on NORMAL maps;
+  # no workshop VScript prophunt maps). Two binaries the kus image doesn't ship;
+  # MultiAddonManager (also a PropHunt dependency) IS already in the image.
+  # Fetched reproducibly (pinned zip hashes) and unpacked at build time.
+  unpackZip = name: url: hash:
+    pkgs.runCommand name { } ''
+      mkdir -p $out
+      ${pkgs.unzip}/bin/unzip -q ${pkgs.fetchurl { inherit url hash; }} -d $out
+    '';
+
+  # exkludera/PropHunt — the prophunt gamemode plugin (alpha, v0.0.1).
+  propHunt = unpackZip "cs2-prophunt-0.0.1"
+    "https://github.com/exkludera-cssharp/PropHunt/releases/download/0.0.1/PropHunt_0.0.1.zip"
+    "sha256-0TwQeDLyBVxcIpd/WzCddstqulx1ZQ15E868ADY1Itg=";
+
+  # schwarper/CS2MenuManager — PropHunt's menu dependency (kus ships WASDMenuAPI
+  # instead, which PropHunt does not use).
+  cs2MenuManager = unpackZip "cs2-menumanager-v42"
+    "https://github.com/schwarper/CS2MenuManager/releases/download/v1.0.42/CS2MenuManager-v42.zip"
+    "sha256-iIjOqXvaEqa8YPctVb25yZKChJAPRtyt6uvjEnDPTD0=";
+
+  # Drop the plugin binaries into custom_files. CS2MenuManager is always-on
+  # (plugins/ + shared/); PropHunt is gated to plugins/disabled and loaded only
+  # by prophunt.cfg, then unloaded by our unload_plugins.cfg override elsewhere
+  # (its round-start handler would turn hiders into props in every mode).
+  seedPlugins = pkgs.writeShellScript "cs2-seed-plugins" ''
+    export PATH=${pkgs.coreutils}/bin:$PATH
+    set -eu
+    css=${cssDir}
+    install -d -o games -g games -m 2770 \
+      "$css/plugins" "$css/plugins/disabled" "$css/shared" "$css/gamedata" \
+      "$css/configs/plugins/PropHunt"
+    cp -rT --no-preserve=mode,ownership ${cs2MenuManager}/plugins/CS2MenuManager_MenuManager "$css/plugins/CS2MenuManager_MenuManager"
+    cp -rT --no-preserve=mode,ownership ${cs2MenuManager}/shared/CS2MenuManager "$css/shared/CS2MenuManager"
+    cp -rT --no-preserve=mode,ownership ${propHunt}/plugins/PropHunt "$css/plugins/disabled/PropHunt"
+    cp --no-preserve=mode,ownership ${propHunt}/gamedata/gamedata_prophunt.json "$css/gamedata/gamedata_prophunt.json"
+    chown -R games:games "$css/plugins/CS2MenuManager_MenuManager" "$css/shared/CS2MenuManager" "$css/plugins/disabled/PropHunt" "$css/gamedata/gamedata_prophunt.json"
+    chmod -R u+rwX,g+rwX "$css/plugins/CS2MenuManager_MenuManager" "$css/shared/CS2MenuManager" "$css/plugins/disabled/PropHunt"
   '';
 
 in {
@@ -34,10 +69,11 @@ in {
     "${pkgs.coreutils}/bin/install -d -o games -g games -m 2770 ${cs2DataDir} ${cs2CustomDir} ${cs2CustomDir}/addons ${cs2CustomDir}/addons/counterstrikesharp ${cs2CustomDir}/addons/counterstrikesharp/configs"
 		# Copy over admins.json
     "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${adminsJson} ${cs2CustomDir}/addons/counterstrikesharp/configs/admins.json"
-    # Copy over workshop collection ids list
-    "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${workshopCollections} ${cs2CustomDir}/subscribed_collection_ids.txt"
-    # Override gamemodes_server to include our custom maps too
+    # Override gamemodes_server to include our custom maps too (workshop maps are
+    # referenced directly by id here — no subscribed_collection_ids.txt needed).
     "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${./cs2-presets/gamemodes_server.txt} ${cs2CustomDir}/gamemodes_server.txt"
+    # Drop the old collection-id file so MultiAddonManager stops pulling it.
+    "${pkgs.coreutils}/bin/rm -f ${cs2CustomDir}/subscribed_collection_ids.txt"
 		# Make sure dirs for the gamemodemanger.json file to be copied
     "${pkgs.coreutils}/bin/install -d -o games -g games -m 2770 ${cs2CustomDir}/addons/counterstrikesharp/configs/plugins ${cs2CustomDir}/addons/counterstrikesharp/configs/plugins/GameModeManager"
 		# Copy the GameModeManager.json to override a few settings.
@@ -50,6 +86,25 @@ in {
     # Competitive overrides — exec'd by the kus comp.cfg → comp_settings.cfg
     # chain (after gamemode_competitive.cfg, re-applied after map start).
 		"${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${./cs2-presets/custom_comp.cfg} ${cs2CustomDir}/cfg/custom_comp.cfg"
+
+    # --- Prop Hunt ----------------------------------------------------------
+    # Plugin binaries (PropHunt + CS2MenuManager) into custom_files.
+    "${seedPlugins}"
+    # PropHunt plugin config
+    "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${./cs2-presets/PropHunt.json} ${cssDir}/configs/plugins/PropHunt/PropHunt.json"
+    # Per-map prop-model lists (seedPlugins already created the maps/ dir from
+    # the zip; these add/overwrite). de_dust2 ships with the plugin.
+    "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${./cs2-presets/prophunt-maps/de_dust2.txt} ${cssDir}/plugins/disabled/PropHunt/maps/de_dust2.txt"
+    "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${./cs2-presets/prophunt-maps/de_inferno.txt} ${cssDir}/plugins/disabled/PropHunt/maps/de_inferno.txt"
+    "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${./cs2-presets/prophunt-maps/de_mirage.txt} ${cssDir}/plugins/disabled/PropHunt/maps/de_mirage.txt"
+    "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${./cs2-presets/prophunt-maps/de_nuke.txt} ${cssDir}/plugins/disabled/PropHunt/maps/de_nuke.txt"
+    # Prop Hunt mode cfg chain (prophunt.cfg → prophunt_settings.cfg → custom_prophunt.cfg)
+    "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${./cs2-presets/prophunt.cfg} ${cs2CustomDir}/cfg/prophunt.cfg"
+    "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${./cs2-presets/prophunt_settings.cfg} ${cs2CustomDir}/cfg/prophunt_settings.cfg"
+    "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${./cs2-presets/custom_prophunt.cfg} ${cs2CustomDir}/cfg/custom_prophunt.cfg"
+    # unload_plugins.cfg override — stock list + "Prop Hunt" so it never leaks
+    # into other modes.
+    "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${./cs2-presets/unload_plugins.cfg} ${cs2CustomDir}/cfg/unload_plugins.cfg"
   ];
 
   # kus image env var names. API_KEY required for workshop downloads — get one

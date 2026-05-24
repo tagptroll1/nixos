@@ -90,13 +90,12 @@ qm shutdown 201 && sleep 15 && qm start 201   # virtiofs is not hot-pluggable
 After this, `mount | grep games` on the media VM should show
 `games on /mnt/games type virtiofs`.
 
-### 3. Workshop collection ID
+### 3. Workshop maps (no collection)
 
-The flake hardcodes collection `3731836451` (TV2 maps). If you ever swap
-collections, the ID is in
-`hosts/media/modules/cs2.nix` as `workshopCollections`, **and** referenced
-in the workshop paths inside
-`hosts/media/modules/cs2-presets/gamemodes_server.txt` (the `mg_comp` block).
+There is **no workshop collection** anymore. Every custom map is referenced
+directly by id in `gamemodes_server.txt` as `workshop/<id>/<bsp_name>` (the kus
+image downloads it on changelevel via the Steam `API_KEY`). To add a map, add
+the line to the relevant `mg_*` group — see *Adding/changing maps* below.
 
 ---
 
@@ -104,8 +103,11 @@ in the workshop paths inside
 
 | File | Purpose |
 |------|---------|
-| `hosts/media/modules/cs2.nix` | Container, env vars, volumes, ExecStartPre that drops preseeded files into custom_files |
-| `hosts/media/modules/cs2-presets/gamemodes_server.txt` | Map pool override — `mg_comp` reduced to just the 9 TV2 workshop maps |
+| `hosts/media/modules/cs2.nix` | Container, env vars, volumes, ExecStartPre that drops preseeded files + plugin binaries into custom_files |
+| `hosts/media/modules/cs2-presets/gamemodes_server.txt` | Map pool override — stock kus pool + our `mg_hns` (3 HnS maps) + new `mg_prophunt` (normal maps for the plugin). Workshop maps referenced directly by id — no collection. |
+| `hosts/media/modules/cs2-presets/GameModeManager.json` | Stock GMM config + an added **Prop Hunt** mode (`prophunt.cfg`, `mg_prophunt`). `ChangeImmediately`/`EnabledInWarmup` set true. |
+| `hosts/media/modules/cs2-presets/prophunt*.cfg`, `unload_plugins.cfg` | Prop Hunt mode cfg chain + the unload override that gates the plugin (see Prop Hunt section). |
+| `hosts/media/modules/cs2-presets/PropHunt.json`, `prophunt-maps/*.txt` | PropHunt plugin config + per-map prop-model lists. |
 | `hosts/media/modules/storage.nix` | `games` virtiofs mount + matching `games` user/group (uid 5 / gid 60) + `tagp` in games group |
 | `hosts/media/default.nix` | sops mapping `cs2/api_key` |
 | `hosts/media/secrets/cs2Secret.yaml` | Encrypted secrets: `rcon_pw`, `server_pw`, `api_key` |
@@ -115,10 +117,16 @@ Preseeded into `/mnt/games/cs2-modded-custom/` by ExecStartPre on every
 container start (idempotent `install` commands):
 
 - `addons/counterstrikesharp/configs/admins.json` — tagp as root admin
-- `subscribed_collection_ids.txt` — `3731836451`
-- `subscribed_file_ids.txt` — empty (overrides kus's defaults so we don't
-  pull surf/bhop/kz/etc. workshop maps)
-- `gamemodes_server.txt` — curated map pool
+- `gamemodes_server.txt` — curated map pool (workshop maps referenced by id)
+- `addons/counterstrikesharp/configs/plugins/GameModeManager/GameModeManager.json`
+- `cfg/custom_all.cfg`, `cfg/custom_comp.cfg` — global + competitive overrides
+- Prop Hunt: plugin binaries (PropHunt + CS2MenuManager), `PropHunt.json`,
+  per-map model lists, and the `prophunt*.cfg` / `unload_plugins.cfg` chain
+  (see the **Prop Hunt** section below)
+
+> The old `subscribed_collection_ids.txt` (collection `3731836451`) is **no
+> longer used** — maps are referenced directly by workshop id in
+> `gamemodes_server.txt`. ExecStartPre removes the stale file on each start.
 
 ---
 
@@ -143,6 +151,8 @@ ssh pangoling 'cd ~/nixos && git pull && sudo nixos-rebuild switch --flake ~/nix
 ssh media 'mount | grep games'           # → games on /mnt/games type virtiofs
 ssh media 'systemctl is-active podman-cs2'
 ssh media 'sudo podman logs --tail 50 cs2 | grep -iE "metamod|cssharp|workshop"'
+# Prop Hunt deps present (CS2MenuManager auto-loads; PropHunt loads on !mode prophunt)
+ssh media 'sudo podman logs cs2 2>&1 | grep -iE "MenuManager|Prop Hunt"'
 ```
 
 First container start downloads ~40 GB via SteamCMD — give it 10–20 min.
@@ -153,8 +163,9 @@ First container start downloads ~40 GB via SteamCMD — give it 10–20 min.
 
 ### Adding/changing maps
 
-The map pool is in `hosts/media/modules/cs2-presets/gamemodes_server.txt`,
-specifically the `mg_comp` block. Add workshop entries as:
+The map pool is in `hosts/media/modules/cs2-presets/gamemodes_server.txt`.
+Each game mode draws from one or more `mg_*` groups (see `GameModeManager.json`
+→ `GameModes[].MapGroups`). Add workshop entries to the relevant group as:
 
 ```
 "workshop/<numeric_id>/<map_bsp_name>"    ""
@@ -165,10 +176,60 @@ title. To find it: subscribe + load the map once, check the server log for
 `SV: Spawn Server: <name>` or `maplist { ... }`. If you guess wrong, the
 map silently won't show up in votes.
 
+**Keep a map in exactly one mode's group.** The old setup merged prophunt/HnS
+maps into `mg_comp`, so end-of-map RTV could load them under *competitive*
+rules. Maps now live in a single group: comp maps in `mg_comp`, hide-n-seek in
+`mg_hns`, prop hunt in `mg_prophunt`.
+
 After editing, redeploy:
 ```bash
 git push && ssh media 'cd ~/nixos && git pull && sudo nixos-rebuild switch --flake ~/nixos#media && sudo systemctl restart podman-cs2'
 ```
+
+### Prop Hunt
+
+Prop Hunt is a **server-side plugin** ([exkludera/PropHunt][ph]), *not* the
+workshop VScript prophunt maps (those gate their `!config` menu to the listen
+host, which doesn't exist on a dedicated server — that's why they were dropped).
+The plugin turns hiders into physics props on **normal** maps.
+
+How it's wired:
+
+- **Binaries** are fetched reproducibly in `cs2.nix` (`unpackZip` → `fetchurl`
+  with pinned zip hashes) and dropped into custom_files by the `seedPlugins`
+  script: `PropHunt` into `plugins/disabled/` (gated), `CS2MenuManager` (its
+  menu dependency, not in the kus image) into active `plugins/` + `shared/`.
+  MultiAddonManager (the other dependency) already ships in the image.
+- **Gated load:** `prophunt.cfg` does `css_plugins load "plugins/disabled/PropHunt/PropHunt.dll"`
+  and registers the mode with `css_gamemode "Prop Hunt"`. Our `unload_plugins.cfg`
+  override adds `css_plugins unload "Prop Hunt"`, so switching to any other mode
+  unloads it (otherwise its round-start handler turns hiders into props
+  everywhere). Chain: `prophunt.cfg` → `prophunt_settings.cfg` →
+  `custom_prophunt.cfg` (your tuning point).
+- **Gameplay knobs** (hiding team/time, decoy/swap/taunt limits, sounds) live in
+  `cs2-presets/PropHunt.json`.
+
+**Prop models per map.** The plugin reads `plugins/PropHunt/maps/<mapname>.txt`
+(newline-separated `.vmdl` paths) *and* auto-harvests the map's own
+`prop_physics_multiplayer` models at runtime. So:
+
+- Maps in `mg_prophunt` (`de_dust2`, `de_inferno`, `de_mirage`, `de_nuke`) each
+  have a seed file in `cs2-presets/prophunt-maps/`. `de_dust2` ships a real
+  model; the others seed the same known-valid model + rely on auto-harvest.
+- To curate good props for a map: play it, then read the server log for lines
+  `(OnEntitySpawned) added: <model>` — those are the real, valid vmdl paths on
+  that map. Paste the good ones into the map's `.txt`, redeploy, restart. Wrong
+  paths fail safe (skipped / error model), they don't crash.
+- To add prophunt on a new map: add it to the `mg_prophunt` group in
+  `gamemodes_server.txt`, create `cs2-presets/prophunt-maps/<map>.txt`, and add
+  an `install` line for it in `cs2.nix`.
+
+**Bumping plugin versions.** Update the `url` + `hash` in `cs2.nix` for
+`propHunt` / `cs2MenuManager`. Compute the SRI hash of the release zip with:
+`sha256-$(curl -sL <zip-url> | openssl dgst -sha256 -binary | openssl base64 -A)`.
+PropHunt is **alpha (v0.0.1)** — expect rough edges.
+
+[ph]: https://github.com/exkludera-cssharp/PropHunt
 
 ### Adding/changing admins
 

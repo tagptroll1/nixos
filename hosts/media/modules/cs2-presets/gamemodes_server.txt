@@ -41,6 +41,7 @@
 						"mg_ctf"			"68"
 						"mg_retake"			"69"
 						"mg_executes"		"70"
+						"mg_prophunt"		"71"
 					}
 				}
 
@@ -49,13 +50,13 @@
 					"maxplayers"			"64"
 					"exec"
 					{
-							"exec" "gamemode_competitive_last.cfg"
+						"exec" "gamemode_competitive_last.cfg"
 					}
 					// Map groups for online modes
 					"mapgroupsMP"
 					{
 						// team lobby map veto
-						"mg_active"			"50"
+						"mg_comp"			"50"
 					}
 				}
 
@@ -222,24 +223,48 @@
 			"displayname"			"Competitive"
 			"maps"
 			{
-				"de_cache"	""
+				"de_dust2"			""
+				"de_cache"			""
+				"de_mirage"			""
+				"de_inferno"		""
 				"de_ancient_night"	""
-				"de_train"	""
-				"de_vertigo"	""
-				"de_warden"	""
-				"de_stronghold"	""
-				"cs_alpine"	""
-				"cs_office"	""
-				"cs_italy"	""
-				"workshop/3354500067/dust2_hide_and_seek"	""
-				"workshop/3306768315/denhet_genshin_impact_prophunt"	""
-				"workshop/3097563690/infernohideandseek"	""
-				"workshop/3235547383/seek_mirage"	""
-				"workshop/3355497176/movement_hub"	""
-				"workshop/3346403247/dm_office_tower"	""
-				"workshop/3074758439/kzpro_only_up_extended"	""
-				"workshop/3608612434/prophunt_inferno"	""
-				"workshop/3615968422/prophunt_mirage"	""
+				"de_nuke"			""
+				"de_train"			""
+				"de_overpass"		""
+				"de_anubis"			""
+				"de_vertigo"		""
+				"de_warden"			""
+				"de_stronghold"		""
+				"cs_alpine"			""
+				"cs_office"			""
+				"cs_italy"			""
+				"workshop/3286163323/de_golden"			""
+				"workshop/3249860053/de_palacio"		""
+				"workshop/3339983232/cs_agency"			""
+				"workshop/3329258290/de_basalt"        ""
+				"workshop/3328169568/de_edin"        ""
+				"workshop/3071005299/de_assembly"		""
+				"workshop/3329387648/de_cbble"		""
+				"workshop/3691046714/de_splinter"		""
+				"workshop/3075706807/de_biome"		""
+				"workshop/3070346180/mp_raid"		""
+				"workshop/3070766070/de_mutiny"		""
+				"workshop/3694043544/cs_assault"		""
+				"workshop/3072352643/de_ruins_d_prefab"		""
+				"workshop/3089953774/cs_militia"		""
+				"workshop/3079692971/de_aztec_hr"		""
+				"workshop/3108513658/de_akiba"		""
+				"workshop/3681322159/factory"		""
+				"workshop/3236615060/cs_insertion2"		""
+				"workshop/3152430710/de_mills"		""
+				"workshop/3121217565/de_thera"		""
+				"workshop/3073892687/de_season"		""
+				"workshop/3386116667/de_ema"		""
+				"workshop/3345551391/twofort_cs2"		""
+				"workshop/3460962520/de_rats_remake"		""
+				"workshop/3464733042/de_mirage_bricks"		""
+				"workshop/3683699332/project_phoenix"		""
+				"workshop/3687298714/ultimate_free_nuke"		""
 			}
 		}
 		"mg_retake"
@@ -536,24 +561,19 @@
 				"workshop/3235547383/seek_mirage"		""
 			}
 		}
+		// Prop Hunt runs server-side via the exkludera PropHunt plugin on NORMAL
+		// maps (per-map prop-model lists in addons/.../plugins/PropHunt/maps/).
+		// Do NOT put workshop VScript prophunt maps here. Loaded by prophunt.cfg.
 		"mg_prophunt"
 		{
 			"name"			"mg_prophunt"
-			"displayname"			"Prophunt"
+			"displayname"			"Prop Hunt"
 			"maps"
 			{
-				"workshop/3608612434/prophunt_inferno"		""
-				"workshop/3615968422/prophunt_mirage"		""
-				"workshop/3306768315/denhet_genshin_impact_prophunt"		""
-			}
-		}
-		"mg_office"
-		{
-			"name"			"mg_office"
-			"displayname"			"Office Tower"
-			"maps"
-			{
-				"workshop/3346403247/dm_office_tower"		""
+				"de_dust2"		""
+				"de_inferno"	""
+				"de_mirage"		""
+				"de_nuke"		""
 			}
 		}
 		"mg_soccer"
