@@ -105,10 +105,10 @@
     ]
   },
   "GameModes": {
-    "Style": "center",
+    "Style": "button",
     "Default": {
-      "Name": "Competitive (Valve)",
-      "Config": "valve-competitive.cfg",
+      "Name": "Competitive",
+      "Config": "competitive.cfg",
       "DefaultMap": "de_inferno",
       "MapGroups": [
         "mg_active",
@@ -130,12 +130,13 @@
         "Config": "deathmatch.cfg",
         "DefaultMap": "de_dust2",
         "MapGroups": [
-          "mg_dm"
+          "mg_dm",
+					"mg_comp"
         ]
       },
       {
         "Name": "Competitive",
-        "Config": "comp.cfg",
+        "Config": "competitive.cfg",
         "DefaultMap": "de_inferno",
         "MapGroups": [
           "mg_comp"

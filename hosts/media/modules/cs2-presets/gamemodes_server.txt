@@ -49,7 +49,8 @@
 					"maxplayers"			"64"
 					"exec"
 					{
-						"exec" "gamemode_competitive_last.cfg"
+						// "exec" "gamemode_competitive_last.cfg"
+						"exec" "competitive.cfg"
 					}
 					// Map groups for online modes
 					"mapgroupsMP"
