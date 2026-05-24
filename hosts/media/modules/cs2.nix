@@ -16,6 +16,18 @@ let
       flags    = [ "@css/root" ];
     };
   });
+
+  # Workshop collection 3731836451 (TV2 maps — 9 maps for prophunt / hide-and-seek
+  # / movement). MultiAddonManager (bundled with kus image) pulls all maps in the
+  # collection. Browse them in-game via the !maps / !nominate vote menus alongside
+  # the vanilla active-duty pool.
+  workshopCollections = pkgs.writeText "subscribed_collection_ids.txt" ''
+    3731836451
+  '';
+
+  # Override kus's default subscribed_file_ids (10 surf/bhop/kz/etc. workshop maps
+  # we don't want) with an empty file. Our maps come from the collection above.
+  workshopFiles = pkgs.writeText "subscribed_file_ids.txt" "";
 in {
   virtualisation.podman.enable          = true;
   virtualisation.oci-containers.backend  = "podman";
@@ -30,6 +42,8 @@ in {
   systemd.services.podman-cs2.serviceConfig.ExecStartPre = [
     "${pkgs.coreutils}/bin/install -d -o games -g games -m 2770 ${cs2DataDir} ${cs2CustomDir} ${cs2CustomDir}/addons ${cs2CustomDir}/addons/counterstrikesharp ${cs2CustomDir}/addons/counterstrikesharp/configs"
     "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${adminsJson} ${cs2CustomDir}/addons/counterstrikesharp/configs/admins.json"
+    "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${workshopCollections} ${cs2CustomDir}/subscribed_collection_ids.txt"
+    "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${workshopFiles} ${cs2CustomDir}/subscribed_file_ids.txt"
   ];
 
   # kus image env var names. API_KEY required for workshop downloads — get one
