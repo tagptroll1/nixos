@@ -29,6 +29,11 @@
     hosts = import ./lib/hosts.nix;
   in
   {
+    # Exposed so the prophunt plugin's NuGet lock can be generated:
+    #   nix build .#cs2-prophunt.fetch-deps && ./result pkgs/cs2-prophunt/deps.json
+    packages.x86_64-linux.cs2-prophunt =
+      nixpkgs.legacyPackages.x86_64-linux.callPackage ./pkgs/cs2-prophunt { };
+
     nixosConfigurations = {
       private = nixpkgs.lib.nixosSystem {
         specialArgs = {
