@@ -107,8 +107,8 @@
   "GameModes": {
     "Style": "center",
     "Default": {
-      "Name": "Competitive",
-      "Config": "comp.cfg",
+      "Name": "Competitive (Valve)",
+      "Config": "valve-competitive.cfg",
       "DefaultMap": "de_inferno",
       "MapGroups": [
         "mg_active",
