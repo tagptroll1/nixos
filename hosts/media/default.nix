@@ -23,6 +23,7 @@
 		./modules/netbird.nix
 		./modules/caddy.nix
 		./modules/cockpit.nix
+		./modules/podman.nix
 		./modules/cs2.nix
 		./modules/factorio.nix
 		./modules/mealie.nix

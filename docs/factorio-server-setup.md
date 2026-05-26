@@ -42,8 +42,10 @@ No home02 changes: the `games` virtiofs share (`/mnt/games`) is already wired fo
 2. Rebuild both hosts:
    - on media:     `sudo nixos-rebuild switch --flake ~/nixos#media`
    - on pangoling: `sudo nixos-rebuild switch --flake ~/nixos#pangoling`
-3. Open `https://factorio.ybmn.no`, log in (`tagp` / the `ADMIN_PASS` from factorio.nix).
-   Change the password in the UI (Settings) afterwards.
+3. Open `https://factorio.ybmn.no`, log in with the FSM default **`admin` / `factorio`**
+   (the image ignores ADMIN_USER/ADMIN_PASS — the account is seeded in
+   `fsm-data/sqlite.db` on first start). Change it in the UI (Settings → user)
+   afterwards.
 4. In FSM, enter your factorio.com username + token, then install mods:
    - **administratorio**
    - **Squeak Through**
