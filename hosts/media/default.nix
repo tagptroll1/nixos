@@ -24,6 +24,7 @@
 		./modules/caddy.nix
 		./modules/cockpit.nix
 		./modules/cs2.nix
+		./modules/factorio.nix
 		./modules/mealie.nix
 		./modules/opencloud.nix
 		./modules/immich.nix

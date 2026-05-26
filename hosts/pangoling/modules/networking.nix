@@ -15,6 +15,7 @@
 			allowedUDPPorts = [
 				51820  # NetBird wireguard
 				27015  # CS2 → forwarded to media (see forwarding.nix)
+				34197  # Factorio → forwarded to media (see forwarding.nix)
 			];
 		};
 		interfaces.${hostConfig.interface}.ipv4.addresses = [{

@@ -13,6 +13,12 @@
 				sourcePort = 27015;
 				destination = "100.122.55.95:27015";
 			}
+			{
+				# Factorio server on media (FSM container)
+				proto = "udp";
+				sourcePort = 34197;
+				destination = "100.122.55.95:34197";
+			}
 		];
 
 		# Source-NAT forwarded traffic to media so reply packets come back
@@ -29,10 +35,14 @@
 		extraCommands = ''
 			iptables -t nat -A POSTROUTING -o wt0 -d 100.122.55.95 -p udp --dport 27015 -j MASQUERADE
 			iptables -t nat -A PREROUTING -i wt0 -p udp --dport 27015 -m addrtype --dst-type LOCAL -j DNAT --to-destination 100.122.55.95:27015
+			iptables -t nat -A POSTROUTING -o wt0 -d 100.122.55.95 -p udp --dport 34197 -j MASQUERADE
+			iptables -t nat -A PREROUTING -i wt0 -p udp --dport 34197 -m addrtype --dst-type LOCAL -j DNAT --to-destination 100.122.55.95:34197
 		'';
 		extraStopCommands = ''
 			iptables -t nat -D POSTROUTING -o wt0 -d 100.122.55.95 -p udp --dport 27015 -j MASQUERADE || true
 			iptables -t nat -D PREROUTING -i wt0 -p udp --dport 27015 -m addrtype --dst-type LOCAL -j DNAT --to-destination 100.122.55.95:27015 || true
+			iptables -t nat -D POSTROUTING -o wt0 -d 100.122.55.95 -p udp --dport 34197 -j MASQUERADE || true
+			iptables -t nat -D PREROUTING -i wt0 -p udp --dport 34197 -m addrtype --dst-type LOCAL -j DNAT --to-destination 100.122.55.95:34197 || true
 		'';
 	};
 }

@@ -63,9 +63,6 @@ let
   '';
 
 in {
-  virtualisation.podman.enable          = true;
-  virtualisation.oci-containers.backend  = "podman";
-
   systemd.services.podman-cs2.serviceConfig.ExecStartPre = [
 	  # Ensure all dirs exists
     "${pkgs.coreutils}/bin/install -d -o games -g games -m 2770 ${cs2DataDir} ${cs2CustomDir} ${cs2CustomDir}/addons ${cs2CustomDir}/addons/counterstrikesharp ${cs2CustomDir}/addons/counterstrikesharp/configs"

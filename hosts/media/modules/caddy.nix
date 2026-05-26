@@ -76,6 +76,7 @@
       # ever drifts.
       "qbit.ybmn.no".extraConfig     = gated "192.168.15.1:8080";
       "recipe.ybmn.no".extraConfig = gated "127.0.0.1:9925";
+      "factorio.ybmn.no".extraConfig = gated "127.0.0.1:8090";
       "cloud.ybmn.no".extraConfig     = gated "127.0.0.1:9200";
       "collabora.ybmn.no".extraConfig = gated "127.0.0.1:9980";
       "wopi.ybmn.no".extraConfig      = gated "127.0.0.1:9300";

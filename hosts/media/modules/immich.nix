@@ -39,8 +39,7 @@
   users.users.immich.uid = 1001;
   users.groups.immich.gid = 1001;
 
-  # Container runtime + NVIDIA CDI for GPU access from podman.
-  virtualisation.podman.enable = true;
+  # NVIDIA CDI for GPU access from podman.
   hardware.nvidia-container-toolkit.enable = true;
 
   # Upstream CUDA-enabled ML image, pinned to the same version as the

@@ -21,9 +21,6 @@
     "/mnt/cloud/data".d   = { user = "opencloud"; group = "family"; mode = "0770"; };
   };
 
-  virtualisation.podman.enable = true;
-  virtualisation.oci-containers.backend = "podman";
-
   # Shared bridge network so opencloud + collaboration + collabora can reach
   # each other by container name on internal ports (nats registry, gRPC,
   # WOPI). Without this they each live in their own netns and can only talk
