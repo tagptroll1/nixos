@@ -17,6 +17,9 @@
 			"thomas@yesbutmaybe.no" = {
 				hashedPasswordFile = config.sops.secrets."mail_hashed_password".path;
 				aliases = [ "admin@yesbutmaybe.no" ];
+				# Catch-all: any address @yesbutmaybe.no that isn't another
+				# account or alias is delivered here.
+				catchAll = [ "yesbutmaybe.no" ];
 			};
 			"grafana@yesbutmaybe.no" = {
 				hashedPasswordFile = config.sops.secrets."mail_grafana_hashed_password".path;
