@@ -15,6 +15,11 @@ let
       immunity = 100;
       flags    = [ "@css/root" ];
     };
+		exmx = {
+			identity = "76561197960441548";
+			immunity = 90;
+			flags = [ "@css/root" ];
+		};
   });
 
   cssDir = "${cs2CustomDir}/addons/counterstrikesharp";
