@@ -1,9 +1,15 @@
 { lib, buildDotnetModule, fetchFromGitHub, dotnetCorePackages }:
 
-# exkludera/PropHunt, built from source with a small patch:
-#   * adds src/Commands.cs — bindable [ConsoleCommand] actions (css_phfreeze etc.)
-#   * disables the auto-opened on-screen menu (the actions are otherwise only
-#     reachable as chat-driven menu items "!1".."!4", which is what we don't want)
+# exkludera/PropHunt, built from source with our patches:
+#   * adds src/Commands.cs — bindable [ConsoleCommand] actions + server-side
+#     hotkeys (E freeze / R swap / Mouse2 taunt) via OnPlayerButtonsChanged.
+#   * disables the auto-opened on-screen menu (actions come from console
+#     commands / hotkeys instead of chat-driven "!1".."!4" menu items).
+#   * fixes precache ordering so the current map's prop models are actually
+#     sent to clients (was: every prop always showed as a soccer ball).
+#   * switches hider props from TRIGGER → INTERACTIVE collision so bullets
+#     register hits and seekers can actually kill props.
+#   * re-enables footstep sounds on hider pawns (upstream silenced them).
 #
 # Two hashes are TOFU — generate them on a host with nix (see
 # docs/cs2-server-setup.md → "Building the prophunt plugin"):
@@ -32,9 +38,47 @@ buildDotnetModule (finalAttrs: {
 
   postPatch = ''
     cp ${./Commands.cs} src/Commands.cs
-    # Don't auto-open the menu on hider spawn; actions come from console commands.
+
+    # Don't auto-open the menu on hider spawn; actions come from console commands
+    # / server-side hotkeys (E / R / Mouse2). See Commands.cs.
     substituteInPlace src/Events.cs \
       --replace-fail "Menu.Open(player);" "/* menu disabled (NixOS): see Commands.cs */"
+
+    # Bug fix — precache the CURRENT map's model list. OnServerPrecacheResources
+    # fires before OnMapStart, so upstream iterates Plugin.models while it still
+    # holds the previous map's leftovers (or is empty on first map). Result:
+    # this map's vmdls never reach clients, so SetModel falls back to whatever
+    # the client happens to have cached — typically the soccer ball. Loading
+    # the txt list eagerly here puts the correct models in the precache manifest.
+    substituteInPlace src/Events.cs \
+      --replace-fail \
+        'List<string> resources =' \
+        'Utils.AddMapModels(Server.MapName); List<string> resources ='
+
+    # Bug fix — make hider props HITTABLE. Upstream uses COLLISION_GROUP_TRIGGER
+    # so the hider doesn't shove their own prop, but triggers don't block
+    # bullets, so OnEntityTakeDamagePre never fires (= prop is immortal).
+    # INTERACTIVE accepts bullet damage. Owning player will collide with their
+    # own prop slightly; acceptable trade-off (the prop teleports to follow).
+    substituteInPlace src/Utils/Utils.cs src/Menu.cs \
+      --replace-fail "COLLISION_GROUP_TRIGGER" "COLLISION_GROUP_INTERACTIVE"
+
+    # Bug fix — re-enable footsteps. Upstream strips ALL recipients from sound
+    # messages (msg 208) emitted by hidden players' pawns to hide their location.
+    # Prophunt is more fun when seekers can hunt by ear: prop and player are
+    # co-located so the audio origin is already correct.
+    substituteInPlace src/Events.cs \
+      --replace-fail \
+        'Instance.HookUserMessage(208, CMsgSosStartSoundEvent, HookMode.Pre);' \
+        '/* footsteps enabled (NixOS): sos hook disabled */' \
+      --replace-fail \
+        'Instance.UnhookUserMessage(208, CMsgSosStartSoundEvent, HookMode.Pre);' \
+        '/* footsteps enabled (NixOS) */'
+
+    # Hook up our server-side hotkey listener (E / R / Mouse2) on plugin load.
+    substituteInPlace src/Main.cs \
+      --replace-fail "Events.Register();" \
+                     "Events.Register(); Plugin.RegisterHotkeys();"
   '';
 
   meta = {
