@@ -55,13 +55,28 @@ buildDotnetModule (finalAttrs: {
         'List<string> resources =' \
         'Utils.AddMapModels(Server.MapName); List<string> resources ='
 
-    # Bug fix — make hider props HITTABLE. Upstream uses COLLISION_GROUP_TRIGGER
-    # so the hider doesn't shove their own prop, but triggers don't block
-    # bullets, so OnEntityTakeDamagePre never fires (= prop is immortal).
-    # INTERACTIVE accepts bullet damage. Owning player will collide with their
-    # own prop slightly; acceptable trade-off (the prop teleports to follow).
+    # Bug fix — make hider props HITTABLE without blocking the owning player.
+    # Upstream uses COLLISION_GROUP_TRIGGER (no bullet hits) → prop immortal.
+    # INTERACTIVE makes the prop solid → player gets stuck inside (prop follows
+    # player, can't move). COLLISION_GROUP_DEBRIS is the prophunt sweet spot:
+    # bullets register, players walk through.
     substituteInPlace src/Utils/Utils.cs src/Menu.cs \
-      --replace-fail "COLLISION_GROUP_TRIGGER" "COLLISION_GROUP_INTERACTIVE"
+      --replace-fail "COLLISION_GROUP_TRIGGER" "COLLISION_GROUP_DEBRIS"
+
+    # Feature — harvest prop_dynamic models too, not just prop_physics_multiplayer.
+    # Most map detail (dust2 barrels/crates/boxes/signs) is prop_dynamic; without
+    # this, only the rare prop_physics_multiplayer entries end up in Plugin.models
+    # → on dust2 that's literally just the soccer ball → swap always rolls football.
+    substituteInPlace src/Events.cs \
+      --replace-fail \
+        'if (entity.DesignerName == "prop_physics_multiplayer")' \
+        'if (entity.DesignerName == "prop_physics_multiplayer" || entity.DesignerName == "prop_dynamic")'
+    # The narrow cast assumed prop_physics_multiplayer; broaden to a base type
+    # that still exposes CBodyComponent for both designer names.
+    substituteInPlace src/Events.cs \
+      --replace-fail \
+        'var prop = new CPhysicsPropMultiplayer(entity.Handle);' \
+        'var prop = new CBaseModelEntity(entity.Handle);'
 
     # Bug fix — re-enable footsteps. Upstream strips ALL recipients from sound
     # messages (msg 208) emitted by hidden players' pawns to hide their location.

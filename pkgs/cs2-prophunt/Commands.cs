@@ -42,7 +42,7 @@ public partial class Plugin
         else
         {
             data.entity.AcceptInput("DisableMotion");
-            data.entity.CollisionRulesChanged(CollisionGroup.COLLISION_GROUP_INTERACTIVE);
+            data.entity.CollisionRulesChanged(CollisionGroup.COLLISION_GROUP_DEBRIS);
             player.UnFreeze();
         }
 
@@ -135,7 +135,7 @@ public partial class Plugin
         prop.Teleport(pawn.AbsOrigin, pawn.AbsRotation);
         prop.DispatchSpawn();
         prop.AcceptInput("DisableMotion");
-        prop.CollisionRulesChanged(CollisionGroup.COLLISION_GROUP_INTERACTIVE);
+        prop.CollisionRulesChanged(CollisionGroup.COLLISION_GROUP_DEBRIS);
 
         data.Swaps--;
         Plugin.HiddenPlayers[player.Slot] = new PlayerProp(prop, model)
