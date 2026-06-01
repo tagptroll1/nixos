@@ -106,6 +106,13 @@ in {
     # unload_plugins.cfg override — stock list + "Prop Hunt" so it never leaks
     # into other modes.
     "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${./cs2-presets/unload_plugins.cfg} ${cs2CustomDir}/cfg/unload_plugins.cfg"
+
+    # CS2AnnouncementBroadcaster messages.json override — replaces the kus
+    # default Hide-and-Seek welcome (which references the old "E in front /
+    # E under" controls) with our actual PropHunt controls (E = freeze,
+    # R = swap, Mouse2 = taunt, A/D = rotate while frozen).
+    "${pkgs.coreutils}/bin/install -d -o games -g games -m 2770 ${cssDir}/plugins/CS2AnnouncementBroadcaster/cfg"
+    "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${./cs2-presets/cs2ab-messages.json} ${cssDir}/plugins/CS2AnnouncementBroadcaster/cfg/messages.json"
   ];
 
   # kus image env var names. API_KEY required for workshop downloads — get one
