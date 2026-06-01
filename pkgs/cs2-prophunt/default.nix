@@ -32,7 +32,7 @@ buildDotnetModule (finalAttrs: {
     # below is upstream's last commit (will fail because the fork's main has
     # since diverged once you push). Use lib.fakeHash to TOFU the hash.
     rev = "f3ef9d43dfd54ff1f80340332a20452e7655e110";
-    hash = lib.fakeHash;
+    hash = "sha256-kyLRmYqwRKd3AaUytn6W2N3WOM+6OOo9bliTeFRnv2M=";
   };
 
   projectFile = "src/PropHunt.csproj";
