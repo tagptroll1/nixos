@@ -16,9 +16,11 @@
 #   5. sudo nixos-rebuild switch --flake ~/nixos#media on media.
 #   6. In the cs2 console: css_plugins reload PropHunt
 #
-# The fork targets net9.0 (vs upstream's net8.0) — keep dotnet-sdk/runtime
-# pinned to 9.0 here. deps.json is genuinely `[]` — the only PackageReference
-# is CounterStrikeSharp.API and it has no transitive nuget deps.
+# Targets net8.0 to match CSSharp's runtime host (kus image ships .NET 8 hostfxr
+# under csgo/addons/counterstrikesharp/dotnet/host/fxr/8.0.x). Building against
+# net9.0 produces a DLL that references System.Runtime 9.0.0.0 → FileNotFoundException
+# at load. deps.json is genuinely `[]` — the only PackageReference is
+# CounterStrikeSharp.API and it has no transitive nuget deps.
 buildDotnetModule (finalAttrs: {
   pname = "cs2-prophunt";
   version = "0.1.0-unstable-2026-06-01";
@@ -29,15 +31,15 @@ buildDotnetModule (finalAttrs: {
     # TODO: bump after pushing the patch-fold-in commit. Until then, the rev
     # below is upstream's last commit (will fail because the fork's main has
     # since diverged once you push). Use lib.fakeHash to TOFU the hash.
-    rev = "e1c48b5e21693e213272c25ae8d49ad4fb748eb6";
-    hash = "sha256-zB3REIXXGcfIhon2+nwIj0oq2gJKGYZSWSW7DV+SLSU=";
+    rev = "f3ef9d43dfd54ff1f80340332a20452e7655e110";
+    hash = lib.fakeHash;
   };
 
   projectFile = "src/PropHunt.csproj";
   nugetDeps = ./deps.json;
 
-  dotnet-sdk = dotnetCorePackages.sdk_9_0;
-  dotnet-runtime = dotnetCorePackages.runtime_9_0;
+  dotnet-sdk = dotnetCorePackages.sdk_8_0;
+  dotnet-runtime = dotnetCorePackages.runtime_8_0;
 
   # Class library, not an app.
   executables = [ ];
