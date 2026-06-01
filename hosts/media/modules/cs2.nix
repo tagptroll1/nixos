@@ -35,36 +35,23 @@ let
   # chat-driven menu items ("!1".."!4"), which we don't want.
   propHunt = pkgs.callPackage ../../../pkgs/cs2-prophunt { };
 
-  # schwarper/CS2MenuManager — PropHunt still links this at build/runtime even
-  # with the menu disabled. Prebuilt release (pinned zip hash), unpacked here.
-  cs2MenuManager = pkgs.runCommand "cs2-menumanager-v42" { } ''
-    mkdir -p $out
-    ${pkgs.unzip}/bin/unzip -q ${pkgs.fetchurl {
-      url = "https://github.com/schwarper/CS2MenuManager/releases/download/v1.0.42/CS2MenuManager-v42.zip";
-      hash = "sha256-iIjOqXvaEqa8YPctVb25yZKChJAPRtyt6uvjEnDPTD0=";
-    }} -d $out
-  '';
-
-  # Drop the plugin binaries into custom_files. CS2MenuManager is always-on
-  # (plugins/ + shared/); PropHunt is gated to plugins/disabled and loaded only
-  # by prophunt.cfg, then unloaded by our unload_plugins.cfg override elsewhere
-  # (its round-start handler would turn hiders into props in every mode).
+  # Drop the PropHunt plugin DLL into custom_files. It's gated to
+  # plugins/disabled and loaded only by prophunt.cfg, then unloaded by our
+  # unload_plugins.cfg override (its round-start handler would otherwise turn
+  # hiders into props in every mode). CounterStrikeSharp.API is provided by the
+  # kus image; CS2MenuManager dep was patched out — no longer needed.
   seedPlugins = pkgs.writeShellScript "cs2-seed-plugins" ''
     export PATH=${pkgs.coreutils}/bin:$PATH
     set -eu
     css=${cssDir}
     install -d -o games -g games -m 2770 \
       "$css/plugins" "$css/plugins/disabled" "$css/plugins/disabled/PropHunt" \
-      "$css/plugins/disabled/PropHunt/maps" "$css/shared" "$css/gamedata" \
+      "$css/plugins/disabled/PropHunt/maps" "$css/gamedata" \
       "$css/configs/plugins/PropHunt"
-    cp -rT --no-preserve=mode,ownership ${cs2MenuManager}/plugins/CS2MenuManager_MenuManager "$css/plugins/CS2MenuManager_MenuManager"
-    cp -rT --no-preserve=mode,ownership ${cs2MenuManager}/shared/CS2MenuManager "$css/shared/CS2MenuManager"
-    # Built plugin DLL + its deps manifest only (CounterStrikeSharp.API is
-    # provided by the image; CS2MenuManager by shared/ above).
     cp --no-preserve=mode,ownership ${propHunt}/lib/cs2-prophunt/PropHunt.dll "$css/plugins/disabled/PropHunt/PropHunt.dll"
     cp --no-preserve=mode,ownership ${propHunt}/lib/cs2-prophunt/PropHunt.deps.json "$css/plugins/disabled/PropHunt/PropHunt.deps.json"
-    chown -R games:games "$css/plugins/CS2MenuManager_MenuManager" "$css/shared/CS2MenuManager" "$css/plugins/disabled/PropHunt"
-    chmod -R u+rwX,g+rwX "$css/plugins/CS2MenuManager_MenuManager" "$css/shared/CS2MenuManager" "$css/plugins/disabled/PropHunt"
+    chown -R games:games "$css/plugins/disabled/PropHunt"
+    chmod -R u+rwX,g+rwX "$css/plugins/disabled/PropHunt"
   '';
 
 in {
@@ -92,7 +79,7 @@ in {
 		"${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${./cs2-presets/custom_comp.cfg} ${cs2CustomDir}/cfg/custom_comp.cfg"
 
     # --- Prop Hunt ----------------------------------------------------------
-    # Plugin binaries (PropHunt + CS2MenuManager) into custom_files.
+    # PropHunt plugin binary into custom_files.
     "${seedPlugins}"
     # PropHunt gamedata (offsets) — vendored since we build from source.
     "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${./cs2-presets/gamedata_prophunt.json} ${cssDir}/gamedata/gamedata_prophunt.json"

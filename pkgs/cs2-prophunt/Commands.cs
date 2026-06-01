@@ -113,39 +113,21 @@ public partial class Plugin
             return;
         }
 
-        // SetModel on a live prop_physics_override is unreliable in CS2 (clients
-        // often keep the old visual). Destroy + recreate, mirroring PropSpawner.
-        string oldModel = data.entity != null && data.entity.IsValid
-            ? data.entity.CBodyComponent!.SceneNode!.GetSkeletonInstance().ModelState.ModelName
-            : "";
+        if (data.entity == null || !data.entity.IsValid)
+            return;
 
+        // Instant swap: SetModel on the live prop. Works smoothly now that the
+        // precache fix ensures every model in the per-map .txt is in the resource
+        // manifest. Earlier we did Remove + Create to work around the precache
+        // miss, which caused the 1–4 sec "no prop visible" gap.
+        string oldModel = data.entity.CBodyComponent!.SceneNode!.GetSkeletonInstance().ModelState.ModelName;
         string model = oldModel;
         for (int attempt = 0; attempt < 5 && model == oldModel && models.Count > 1; attempt++)
             model = models[Random.Shared.Next(models.Count)];
 
-        var pawn = player.PlayerPawn.Value;
-        if (pawn == null) return;
-
-        if (data.entity != null && data.entity.IsValid)
-            data.entity.Remove();
-
-        var prop = Utilities.CreateEntityByName<CPhysicsPropOverride>("prop_physics_override")!;
-        prop.CBodyComponent!.SceneNode!.Owner!.Entity!.Flags &= ~(uint)(1 << 2);
-        prop.SetModel(model);
-        prop.Teleport(pawn.AbsOrigin, pawn.AbsRotation);
-        prop.DispatchSpawn();
-        prop.AcceptInput("DisableMotion");
-        prop.CollisionRulesChanged(CollisionGroup.COLLISION_GROUP_DEBRIS);
+        data.entity.SetModel(model);
 
         data.Swaps--;
-        Plugin.HiddenPlayers[player.Slot] = new PlayerProp(prop, model)
-        {
-            Frozen = false,
-            Swaps  = data.Swaps,
-            Decoys = data.Decoys,
-            Taunts = data.Taunts,
-        };
-
         Utils.PrintToChat(player, $"{ChatColors.Grey}Swapped model. You have {data.Swaps} left");
     }
 

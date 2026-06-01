@@ -1,23 +1,36 @@
 { lib, buildDotnetModule, fetchFromGitHub, dotnetCorePackages }:
 
-# exkludera/PropHunt, built from source with our patches:
+# exkludera/PropHunt, built from source with our patches. The upstream plugin
+# is v0.0.1 alpha (single commit) and has several rough edges; the postPatch
+# block below addresses each one. See inline comments for the *why* of each.
+#
+# At a glance, what we change:
 #   * adds src/Commands.cs — bindable [ConsoleCommand] actions + server-side
 #     hotkeys (E freeze / R swap / Mouse2 taunt) via OnPlayerButtonsChanged.
 #   * disables the auto-opened on-screen menu (actions come from console
 #     commands / hotkeys instead of chat-driven "!1".."!4" menu items).
-#   * fixes precache ordering so the current map's prop models are actually
-#     sent to clients (was: every prop always showed as a soccer ball).
-#   * switches hider props from TRIGGER → INTERACTIVE collision so bullets
-#     register hits and seekers can actually kill props.
-#   * re-enables footstep sounds on hider pawns (upstream silenced them).
+#   * precache: load the CURRENT map's model list at precache time (upstream
+#     used the prior map's stale list → models never reached clients).
+#   * collision: TRIGGER (immortal) → DEBRIS (bullets register, hider walks
+#     through their own prop).
+#   * model harvest: also pick up `prop_dynamic`, not just
+#     `prop_physics_multiplayer` (covers most map detail).
+#   * AddMapModels fallback: try `default.txt` if `<map>.txt` is missing, so
+#     any map (workshop / surf / kz / casual) gets a usable prop pool.
+#   * footsteps: re-enabled (upstream stripped recipients on hider pawn sounds).
+#   * self-invisibility: hider's own pawn render alpha → 0 (otherwise visible
+#     in third-person / spec to themselves; CheckTransmit hides it from others).
 #
-# Two hashes are TOFU — generate them on a host with nix (see
-# docs/cs2-server-setup.md → "Building the prophunt plugin"):
-#   1. src.hash:  build once, nix prints the correct sha256.
-#   2. deps.json: `nix build .#cs2-prophunt.fetch-deps && ./result pkgs/cs2-prophunt/deps.json`
+# Hashes: `src.hash` is from `fetchFromGitHub` (recompute via TOFU if you bump
+# `src.rev`). `deps.json` is `[]` — the only remaining nuget PackageReference
+# is CounterStrikeSharp.API (we patch out CS2MenuManager above) and it has no
+# transitive nuget deps, so the lockfile is genuinely empty. Regenerate via
+# `nix build .#cs2-prophunt.fetch-deps` if a new PackageReference is added.
 buildDotnetModule (finalAttrs: {
   pname = "cs2-prophunt";
-  # Unstable: tracks a pinned commit on main (v0.0.1 + later fixes).
+  # Upstream is exactly one commit (v0.0.1 alpha, never updated). Bumping
+  # src.rev would require both a new src.hash and (if PackageReferences change)
+  # a regenerated deps.json.
   version = "0-unstable-2026-01-03";
 
   src = fetchFromGitHub {
@@ -28,7 +41,7 @@ buildDotnetModule (finalAttrs: {
   };
 
   projectFile = "src/PropHunt.csproj";
-  nugetDeps = ./deps.json; # TODO: generate (see header); placeholder is `[]`
+  nugetDeps = ./deps.json; # genuinely `[]` — no transitive nuget deps (see header)
 
   dotnet-sdk = dotnetCorePackages.sdk_8_0;
   dotnet-runtime = dotnetCorePackages.runtime_8_0;
@@ -43,6 +56,33 @@ buildDotnetModule (finalAttrs: {
     # / server-side hotkeys (E / R / Mouse2). See Commands.cs.
     substituteInPlace src/Events.cs \
       --replace-fail "Menu.Open(player);" "/* menu disabled (NixOS): see Commands.cs */"
+
+    # Drop the CS2MenuManager runtime dep entirely. With the menu disabled the
+    # only remaining touches are two CloseActiveMenu calls (round start +
+    # hider death) which are no-ops in our setup — replace with comments. Then
+    # delete the dead Menu.cs file (its sole entry point is the patched-out
+    # Menu.Open) and strip the PackageReference so the build doesn't link
+    # CS2MenuManager. cs2.nix no longer ships the plugin either.
+    # NB on the no-op replacements: the player/target line at Events.cs:171 is
+    # the single-statement body of a `foreach (...)` loop with no braces, so
+    # replacing it with bare `/* comment */` would silently make the next
+    # statement (Instance.AddTimer) the new loop body. Use `{ }` instead so the
+    # parser sees a proper empty statement.
+    substituteInPlace src/Events.cs \
+      --replace-fail \
+        "using CS2MenuManager.API.Class;" \
+        "/* CS2MenuManager dep removed (NixOS) */" \
+      --replace-fail \
+        "MenuManager.CloseActiveMenu(player);" \
+        "{ /* no menu to close (NixOS) */ }" \
+      --replace-fail \
+        "MenuManager.CloseActiveMenu(target);" \
+        "{ /* no menu to close (NixOS) */ }"
+    rm src/Menu.cs
+    substituteInPlace src/PropHunt.csproj \
+      --replace-fail \
+        '<PackageReference Include="CS2MenuManager" Version="1.0.39" />' \
+        '<!-- CS2MenuManager removed (NixOS): menu disabled, no runtime calls -->'
 
     # Bug fix — precache the CURRENT map's model list. OnServerPrecacheResources
     # fires before OnMapStart, so upstream iterates Plugin.models while it still
@@ -59,9 +99,22 @@ buildDotnetModule (finalAttrs: {
     # Upstream uses COLLISION_GROUP_TRIGGER (no bullet hits) → prop immortal.
     # INTERACTIVE makes the prop solid → player gets stuck inside (prop follows
     # player, can't move). COLLISION_GROUP_DEBRIS is the prophunt sweet spot:
-    # bullets register, players walk through.
-    substituteInPlace src/Utils/Utils.cs src/Menu.cs \
+    # bullets register, players walk through. (Menu.cs is deleted above so it's
+    # no longer in this substituteInPlace list.)
+    substituteInPlace src/Utils/Utils.cs \
       --replace-fail "COLLISION_GROUP_TRIGGER" "COLLISION_GROUP_DEBRIS"
+
+    # Hide the hider's own pawn for themselves too. Upstream sets render alpha
+    # to 254 (basically opaque) on spawn for both teams, and CheckTransmit hides
+    # the pawn from OTHERS — but the hider can still see their own character
+    # in third-person. Override alpha to 0 in PropSpawner (hider-only path).
+    substituteInPlace src/Utils/Utils.cs \
+      --replace-fail 'using CounterStrikeSharp.API;' \
+                     'using CounterStrikeSharp.API; using System.Drawing;'
+    substituteInPlace src/Utils/Utils.cs \
+      --replace-fail \
+        'Plugin.HiddenPlayers.Add(player.Slot, new PlayerProp(prop, model));' \
+        'player.PlayerPawn.Value!.Render = Color.FromArgb(0, 0, 0, 0); Utilities.SetStateChanged(player.PlayerPawn.Value!, "CBaseModelEntity", "m_clrRender"); Plugin.HiddenPlayers.Add(player.Slot, new PlayerProp(prop, model));'
 
     # Fallback — if <mapname>.txt is missing, try default.txt. With it, ANY map
     # (workshop, casual, surf, kz, ...) gets a usable prop pool instead of an
