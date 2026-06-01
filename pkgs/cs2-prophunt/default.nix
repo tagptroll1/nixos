@@ -31,8 +31,8 @@ buildDotnetModule (finalAttrs: {
     # TODO: bump after pushing the patch-fold-in commit. Until then, the rev
     # below is upstream's last commit (will fail because the fork's main has
     # since diverged once you push). Use lib.fakeHash to TOFU the hash.
-    rev = "f3ef9d43dfd54ff1f80340332a20452e7655e110";
-    hash = "sha256-kyLRmYqwRKd3AaUytn6W2N3WOM+6OOo9bliTeFRnv2M=";
+    rev = "e463ab2799493ebb2b4e311129912f4c2775a313";
+    hash = lib.fakeHash;
   };
 
   projectFile = "src/PropHunt.csproj";

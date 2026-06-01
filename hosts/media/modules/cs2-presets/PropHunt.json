@@ -9,7 +9,15 @@
       "DecoyLimit": 2,
       "SwapLimit": 30,
       "TauntLimit": 0
-    }
+    },
+    "Sizes": {
+      "SmallMaxVolume": 4096,
+      "MediumMaxVolume": 262144,
+      "SmallHpRange": [10, 25],
+      "MediumHpRange": [25, 100],
+      "LargeHpRange": [100, 250]
+    },
+    "Debug": false
   },
   "Sounds": {
     "SoundEvents": "soundevents/example.vsndevts",
