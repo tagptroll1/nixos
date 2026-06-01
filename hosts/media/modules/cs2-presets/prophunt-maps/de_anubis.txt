@@ -1,15 +1,38 @@
-// PropHunt prop-model list for de_mirage.
-// Auto-generated from CS2 pak01_dir.vpk (models/props/de_mirage/, models/de_mirage/ + GENERIC_SOURCES).
+// PropHunt prop-model list for de_anubis.
+// Auto-generated from CS2 pak01_dir.vpk (models/anubis/, models/de_anubis/ + GENERIC_SOURCES).
 // Filter rules in pkgs/cs2-prophunt — keep small/medium hideable objects,
 // skip walls/arches/columns/doors/assemblies/oversized models.
-// 190 models below.
-models/de_mirage/industrial/industrial_wood_pallet/industrial_wood_pallet_01.vmdl
-models/de_mirage/industrial/industrial_wood_pallet/industrial_wood_pallet_02_dmg_01.vmdl
-models/props/de_mirage/bench_a.vmdl
-models/props/de_mirage/lamp_ver1.vmdl
-models/props/de_mirage/lamp_ver2.vmdl
-models/props/de_mirage/lamp_ver5.vmdl
-models/props/de_mirage/metal_ammo_box_1.vmdl
+// 213 models below.
+models/anubis/market/market_bag01.vmdl
+models/anubis/market/market_bag02.vmdl
+models/anubis/signs/anubis_exhibition_panel_01.vmdl
+models/anubis/signs/anubis_exhibition_panel_02.vmdl
+models/anubis/signs/anubis_exhibition_panel_02b.vmdl
+models/anubis/signs/anubis_info_panel_01.vmdl
+models/anubis/signs/anubis_map_stand_01.vmdl
+models/anubis/signs/anubis_sign_a_left.vmdl
+models/anubis/signs/anubis_sign_a_right.vmdl
+models/anubis/signs/anubis_sign_b_left.vmdl
+models/anubis/signs/anubis_sign_b_right.vmdl
+models/anubis/structures/statue01.vmdl
+models/anubis/structures/statue01_head.vmdl
+models/anubis/unique/banners_a.vmdl
+models/anubis/vehicles/boat01_cabin.vmdl
+models/de_anubis/market/market_bag01.vmdl
+models/de_anubis/market/market_bag02.vmdl
+models/de_anubis/signs/anubis_exhibition_panel_01.vmdl
+models/de_anubis/signs/anubis_exhibition_panel_02.vmdl
+models/de_anubis/signs/anubis_exhibition_panel_02b.vmdl
+models/de_anubis/signs/anubis_info_panel_01.vmdl
+models/de_anubis/signs/anubis_map_stand_01.vmdl
+models/de_anubis/signs/anubis_sign_a_left.vmdl
+models/de_anubis/signs/anubis_sign_a_right.vmdl
+models/de_anubis/signs/anubis_sign_b_left.vmdl
+models/de_anubis/signs/anubis_sign_b_right.vmdl
+models/de_anubis/structures/statue01.vmdl
+models/de_anubis/structures/statue01_head.vmdl
+models/de_anubis/unique/banners_a.vmdl
+models/de_anubis/vehicles/boat01_cabin.vmdl
 models/props/crates/agents_dossier_01.vmdl
 models/props/crates/crate_aus2025_promo_de_ancient.vmdl
 models/props/crates/crate_aus2025_promo_de_anubis.vmdl

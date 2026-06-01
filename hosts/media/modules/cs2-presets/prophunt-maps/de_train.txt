@@ -1,15 +1,86 @@
-// PropHunt prop-model list for de_mirage.
-// Auto-generated from CS2 pak01_dir.vpk (models/props/de_mirage/, models/de_mirage/ + GENERIC_SOURCES).
+// PropHunt prop-model list for de_train.
+// Auto-generated from CS2 pak01_dir.vpk (models/props/de_train/ + GENERIC_SOURCES).
 // Filter rules in pkgs/cs2-prophunt — keep small/medium hideable objects,
 // skip walls/arches/columns/doors/assemblies/oversized models.
-// 190 models below.
-models/de_mirage/industrial/industrial_wood_pallet/industrial_wood_pallet_01.vmdl
-models/de_mirage/industrial/industrial_wood_pallet/industrial_wood_pallet_02_dmg_01.vmdl
-models/props/de_mirage/bench_a.vmdl
-models/props/de_mirage/lamp_ver1.vmdl
-models/props/de_mirage/lamp_ver2.vmdl
-models/props/de_mirage/lamp_ver5.vmdl
-models/props/de_mirage/metal_ammo_box_1.vmdl
+// 261 models below.
+models/props/de_train/de_train_signalbox_01.vmdl
+models/props/de_train/light_signal_new.vmdl
+models/props/de_train/locker_bench_new.vmdl
+models/props/de_train/lockerbench.vmdl
+models/props/de_train/pallet_barrels.vmdl
+models/props/de_train/train_signalbox_01_new.vmdl
+models/props/de_train/trash_plastic_bottles.vmdl
+models/props/de_train/hr_t/barrel_a/barrel_a.vmdl
+models/props/de_train/hr_t/computer_cart_a/computer_cart_a.vmdl
+models/props/de_train/hr_t/dumpster_a/dumpster_a.vmdl
+models/props/de_train/hr_t/fan_a/parts/fan_a_box_small.vmdl
+models/props/de_train/hr_t/fan_a/parts/fan_blade_small.vmdl
+models/props/de_train/hr_t/fan_a/parts/fan_metal_casing_small.vmdl
+models/props/de_train/hr_t/hr_tv_plasma/hr_tv_plasma.vmdl
+models/props/de_train/hr_t/hr_tv_plasma/hr_tv_plasma_p1.vmdl
+models/props/de_train/hr_t/hr_tv_plasma/hr_tv_plasma_p2.vmdl
+models/props/de_train/hr_t/hr_tv_plasma/hr_tv_plasma_p3.vmdl
+models/props/de_train/hr_t/hr_tv_plasma/hr_tv_plasma_p4.vmdl
+models/props/de_train/hr_t/hr_tv_plasma/hr_tv_plasma_p5.vmdl
+models/props/de_train/hr_t/hr_tv_plasma/hr_tv_plasma_p6.vmdl
+models/props/de_train/hr_t/hr_tv_plasma/hr_tv_plasma_p7.vmdl
+models/props/de_train/hr_t/nuclear_container_a/nuclear_container_a.vmdl
+models/props/de_train/hr_t/nuclear_container_a/nuclear_container_b.vmdl
+models/props/de_train/hr_t/pigeon_sign/pigeon_sign.vmdl
+models/props/de_train/hr_t/rubble_a/rubble_a.vmdl
+models/props/de_train/hr_t/russian_sign_a/russian_sign_a.vmdl
+models/props/de_train/hr_t/train_cratestack/train_cratestack.vmdl
+models/props/de_train/hr_t/train_cratestack_single/train_cratestack_single.vmdl
+models/props/de_train/hr_t/train_sign_a/train_sign_a.vmdl
+models/props/de_train/hr_t/train_wheels_a/train_wheels_a.vmdl
+models/props/de_train/hr_t/trash_b/hr_food_pile.vmdl
+models/props/de_train/hr_t/trash_b/hr_food_pile_02.vmdl
+models/props/de_train/hr_train_s2/train_dumpster_01/train_dumpster_01.vmdl
+models/props/de_train/hr_train_s2/train_electronics/train_electronics_equipment_enclosure_train_switch_box_01.vmdl
+models/props/de_train/hr_train_s2/train_hvac/train_hvac_16_fan_small_01.vmdl
+models/props/de_train/hr_train_s2/train_hvac/train_hvac_16_fan_small_01_angled.vmdl
+models/props/de_train/hr_train_s2/train_hvac/train_hvac_16_fan_small_01_blades.vmdl
+models/props/de_train/hr_train_s2/train_hvac/train_hvac_vent_32_square_02_fan_blades.vmdl
+models/props/de_train/hr_train_s2/train_lights/train_light_old_factory_fancy_dome_01.vmdl
+models/props/de_train/hr_train_s2/train_lights/train_light_old_factory_fancy_dome_02.vmdl
+models/props/de_train/hr_train_s2/train_lights/train_light_old_factory_fancy_dome_03.vmdl
+models/props/de_train/hr_train_s2/train_lights/train_light_old_factory_flourescent_01_ballast.vmdl
+models/props/de_train/hr_train_s2/train_lights/train_light_old_factory_spot_01.vmdl
+models/props/de_train/hr_train_s2/train_lights/train_light_old_factory_spot_01_hanger.vmdl
+models/props/de_train/hr_train_s2/train_lights/train_light_old_factory_spot_01_hanger_lp.vmdl
+models/props/de_train/hr_train_s2/train_lights/train_light_old_factory_spot_01_lp.vmdl
+models/props/de_train/hr_train_s2/train_lockers_01/locker_room_book_01a.vmdl
+models/props/de_train/hr_train_s2/train_lockers_01/locker_room_book_01b.vmdl
+models/props/de_train/hr_train_s2/train_lockers_01/locker_room_book_01c.vmdl
+models/props/de_train/hr_train_s2/train_lockers_01/locker_room_book_01d.vmdl
+models/props/de_train/hr_train_s2/train_logos/train_logo_rf_billboard_01.vmdl
+models/props/de_train/hr_train_s2/train_logos/train_logo_rf_entrance_sign_01.vmdl
+models/props/de_train/hr_train_s2/train_logos/train_logo_rf_intercity_limited_sign_01.vmdl
+models/props/de_train/hr_train_s2/train_logos/train_logo_rough_metal_signboard_12x36_01.vmdl
+models/props/de_train/hr_train_s2/train_logos/train_logo_rough_metal_signboard_18x12_01.vmdl
+models/props/de_train/hr_train_s2/train_logos/train_logo_rough_metal_signboard_18x18_01.vmdl
+models/props/de_train/hr_train_s2/train_logos/train_logo_rough_metal_signboard_18x24_01.vmdl
+models/props/de_train/hr_train_s2/train_logos/train_logo_rough_metal_signboard_18x36_01.vmdl
+models/props/de_train/hr_train_s2/train_logos/train_logo_signboard_24x24_02.vmdl
+models/props/de_train/hr_train_s2/train_logos/train_logo_signboard_24x42_01.vmdl
+models/props/de_train/hr_train_s2/train_logos/train_logo_signboard_32x50_01.vmdl
+models/props/de_train/hr_train_s2/train_logos/train_logo_signboard_32x50_02.vmdl
+models/props/de_train/hr_train_s2/train_logos/train_logo_signboard_64x50_02.vmdl
+models/props/de_train/hr_train_s2/train_logos/train_logo_signboard_light_01.vmdl
+models/props/de_train/hr_train_s2/train_logos/train_logo_signboard_light_02.vmdl
+models/props/de_train/hr_train_s2/train_logos/train_logo_signboard_light_03.vmdl
+models/props/de_train/hr_train_s2/train_logos/train_logo_signboard_wood_80x64_01.vmdl
+models/props/de_train/hr_train_s2/train_power_pole/train_power_pole_01_hangers_03_junction_box.vmdl
+models/props/de_train/hr_train_s2/train_power_pole/train_power_pole_01_hangers_04_junction_box.vmdl
+models/props/de_train/hr_train_s2/train_power_pole/train_power_pole_01_hangers_04b_junction_box.vmdl
+models/props/de_train/hr_train_s2/train_station/train_station_ticket_kiosk_small_01.vmdl
+models/props/de_train/hr_train_s2/train_station_01/train_sign_01.vmdl
+models/props/de_train/hr_train_s2/train_tracks/train_track_crossing_signal_temp.vmdl
+models/props/de_train/hr_train_s2/train_tracks/train_tracks_crossing_signal_01_arm.vmdl
+models/props/de_train/hr_train_s2/train_tracks/train_tracks_crossing_signal_01_arm_lp.vmdl
+models/props/de_train/hr_train_s2/train_tracks/train_tracks_crossing_signal_01_top.vmdl
+models/props/de_train/hr_train_s2/train_tracks/train_tracks_crossing_signal_01_top_lp.vmdl
+models/props/de_train/vending/vending_machine_old.vmdl
 models/props/crates/agents_dossier_01.vmdl
 models/props/crates/crate_aus2025_promo_de_ancient.vmdl
 models/props/crates/crate_aus2025_promo_de_anubis.vmdl

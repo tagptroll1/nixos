@@ -63,6 +63,15 @@ buildDotnetModule (finalAttrs: {
     substituteInPlace src/Utils/Utils.cs src/Menu.cs \
       --replace-fail "COLLISION_GROUP_TRIGGER" "COLLISION_GROUP_DEBRIS"
 
+    # Fallback — if <mapname>.txt is missing, try default.txt. With it, ANY map
+    # (workshop, casual, surf, kz, ...) gets a usable prop pool instead of an
+    # empty Plugin.models. The per-map lists already include the default props
+    # via the generator, so this only kicks in for maps with no curated list.
+    substituteInPlace src/Utils/Utils.cs \
+      --replace-fail \
+        'string filePath = Path.Combine(Instance.ModuleDirectory, "maps", $"{mapname}.txt");' \
+        'string filePath = Path.Combine(Instance.ModuleDirectory, "maps", $"{mapname}.txt"); if (!File.Exists(filePath)) filePath = Path.Combine(Instance.ModuleDirectory, "maps", "default.txt");'
+
     # Feature — harvest prop_dynamic models too, not just prop_physics_multiplayer.
     # Most map detail (dust2 barrels/crates/boxes/signs) is prop_dynamic; without
     # this, only the rare prop_physics_multiplayer entries end up in Plugin.models

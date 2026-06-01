@@ -1,15 +1,11 @@
-// PropHunt prop-model list for de_mirage.
-// Auto-generated from CS2 pak01_dir.vpk (models/props/de_mirage/, models/de_mirage/ + GENERIC_SOURCES).
+// PropHunt prop-model list for de_ancient.
+// Auto-generated from CS2 pak01_dir.vpk (models/props/de_ancient/ + GENERIC_SOURCES).
 // Filter rules in pkgs/cs2-prophunt — keep small/medium hideable objects,
 // skip walls/arches/columns/doors/assemblies/oversized models.
-// 190 models below.
-models/de_mirage/industrial/industrial_wood_pallet/industrial_wood_pallet_01.vmdl
-models/de_mirage/industrial/industrial_wood_pallet/industrial_wood_pallet_02_dmg_01.vmdl
-models/props/de_mirage/bench_a.vmdl
-models/props/de_mirage/lamp_ver1.vmdl
-models/props/de_mirage/lamp_ver2.vmdl
-models/props/de_mirage/lamp_ver5.vmdl
-models/props/de_mirage/metal_ammo_box_1.vmdl
+// 186 models below.
+models/props/de_ancient/ancient_lighting/ancient_lighting_candle_01_lit.vmdl
+models/props/de_ancient/ancient_lighting/ancient_lighting_candle_02_lit.vmdl
+models/props/de_ancient/ancient_lighting/ancient_lighting_candle_03_lit.vmdl
 models/props/crates/agents_dossier_01.vmdl
 models/props/crates/crate_aus2025_promo_de_ancient.vmdl
 models/props/crates/crate_aus2025_promo_de_anubis.vmdl

@@ -98,12 +98,20 @@ in {
     "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${./cs2-presets/gamedata_prophunt.json} ${cssDir}/gamedata/gamedata_prophunt.json"
     # PropHunt plugin config
     "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${./cs2-presets/PropHunt.json} ${cssDir}/configs/plugins/PropHunt/PropHunt.json"
-    # Per-map prop-model lists (seedPlugins already created the maps/ dir from
-    # the zip; these add/overwrite). de_dust2 ships with the plugin.
+    # Per-map prop-model lists — Premier / Competitive Active Duty pool, generated
+    # by pkgs/cs2-prophunt-lists (filters CS2's vmdl index for hideable props).
+    # default.txt is the fallback used by patched AddMapModels for any other map.
+    "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${./cs2-presets/prophunt-maps/default.txt} ${cssDir}/plugins/disabled/PropHunt/maps/default.txt"
+    "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${./cs2-presets/prophunt-maps/de_ancient.txt} ${cssDir}/plugins/disabled/PropHunt/maps/de_ancient.txt"
+    "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${./cs2-presets/prophunt-maps/de_anubis.txt} ${cssDir}/plugins/disabled/PropHunt/maps/de_anubis.txt"
+    "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${./cs2-presets/prophunt-maps/de_cache.txt} ${cssDir}/plugins/disabled/PropHunt/maps/de_cache.txt"
     "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${./cs2-presets/prophunt-maps/de_dust2.txt} ${cssDir}/plugins/disabled/PropHunt/maps/de_dust2.txt"
     "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${./cs2-presets/prophunt-maps/de_inferno.txt} ${cssDir}/plugins/disabled/PropHunt/maps/de_inferno.txt"
     "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${./cs2-presets/prophunt-maps/de_mirage.txt} ${cssDir}/plugins/disabled/PropHunt/maps/de_mirage.txt"
     "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${./cs2-presets/prophunt-maps/de_nuke.txt} ${cssDir}/plugins/disabled/PropHunt/maps/de_nuke.txt"
+    "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${./cs2-presets/prophunt-maps/de_overpass.txt} ${cssDir}/plugins/disabled/PropHunt/maps/de_overpass.txt"
+    "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${./cs2-presets/prophunt-maps/de_train.txt} ${cssDir}/plugins/disabled/PropHunt/maps/de_train.txt"
+    "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${./cs2-presets/prophunt-maps/de_vertigo.txt} ${cssDir}/plugins/disabled/PropHunt/maps/de_vertigo.txt"
     # Prop Hunt mode cfg chain (prophunt.cfg → prophunt_settings.cfg → custom_prophunt.cfg)
     "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${./cs2-presets/prophunt.cfg} ${cs2CustomDir}/cfg/prophunt.cfg"
     "${pkgs.coreutils}/bin/install -m 0660 -o games -g games ${./cs2-presets/prophunt_settings.cfg} ${cs2CustomDir}/cfg/prophunt_settings.cfg"

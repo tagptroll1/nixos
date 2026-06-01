@@ -1,15 +1,62 @@
-// PropHunt prop-model list for de_mirage.
-// Auto-generated from CS2 pak01_dir.vpk (models/props/de_mirage/, models/de_mirage/ + GENERIC_SOURCES).
+// PropHunt prop-model list for de_vertigo.
+// Auto-generated from CS2 pak01_dir.vpk (models/props/de_vertigo/, models/props/hr_vertigo/, models/de_vertigo/ + GENERIC_SOURCES).
 // Filter rules in pkgs/cs2-prophunt — keep small/medium hideable objects,
 // skip walls/arches/columns/doors/assemblies/oversized models.
-// 190 models below.
-models/de_mirage/industrial/industrial_wood_pallet/industrial_wood_pallet_01.vmdl
-models/de_mirage/industrial/industrial_wood_pallet/industrial_wood_pallet_02_dmg_01.vmdl
-models/props/de_mirage/bench_a.vmdl
-models/props/de_mirage/lamp_ver1.vmdl
-models/props/de_mirage/lamp_ver2.vmdl
-models/props/de_mirage/lamp_ver5.vmdl
-models/props/de_mirage/metal_ammo_box_1.vmdl
+// 237 models below.
+models/props/de_vertigo/barrel_group_tintable_01.vmdl
+models/props/de_vertigo/barrel_single_tintable_01.vmdl
+models/props/de_vertigo/cement_bucket_metal_lrg_01.vmdl
+models/props/de_vertigo/concretebags.vmdl
+models/props/de_vertigo/concretebags2.vmdl
+models/props/de_vertigo/concretebags3.vmdl
+models/props/de_vertigo/concretebags4.vmdl
+models/props/de_vertigo/construction_safety_lamp.vmdl
+models/props/de_vertigo/hvac_controller_with_fan_01.vmdl
+models/props/de_vertigo/hvac_fan_02.vmdl
+models/props/de_vertigo/hvac_fan_03.vmdl
+models/props/de_vertigo/hvac_fanblade_spinning_01.vmdl
+models/props/de_vertigo/hvac_fanconnector_01.vmdl
+models/props/de_vertigo/pallet_01.vmdl
+models/props/de_vertigo/pallet_cinderblock01.vmdl
+models/props/de_vertigo/pallet_stack01.vmdl
+models/props/de_vertigo/portapotty01.vmdl
+models/props/de_vertigo/rigidconduit_box_end.vmdl
+models/props/de_vertigo/rigidconduit_box_middle.vmdl
+models/props/de_vertigo/scrapyarddumpster.vmdl
+models/props/de_vertigo/tool_lockbox_closed.vmdl
+models/props/de_vertigo/tool_lockbox_open.vmdl
+models/props/de_vertigo/trafficcone_clean.vmdl
+models/props/de_vertigo/wood_pallet_01.vmdl
+models/props/de_vertigo/wood_pallet_01_static.vmdl
+models/props/de_vertigo/wood_pallet_debris_01.vmdl
+models/props/de_vertigo/wood_pallet_debris_02.vmdl
+models/props/de_vertigo/wood_pallet_debris_04.vmdl
+models/props/de_vertigo/wood_pallet_debris_06.vmdl
+models/props/de_vertigo/wood_pallet_debris_09.vmdl
+models/props/de_vertigo/wood_pallet_debris_10.vmdl
+models/props/de_vertigo/wood_pallet_debris_11.vmdl
+models/props/de_vertigo/wood_pallet_debris_12.vmdl
+models/props/de_vertigo/garbage_chute/garbage_chute_1.vmdl
+models/props/de_vertigo/garbage_chute/garbage_chute_2.vmdl
+models/props/hr_vertigo/company_banner/company_logo.vmdl
+models/props/hr_vertigo/vertico_cement_mixer/cement_mixer_wheels.vmdl
+models/props/hr_vertigo/vertigo_concrete_bags/vertigo_concrete_bag_single_01.vmdl
+models/props/hr_vertigo/vertigo_concrete_bags/vertigo_concrete_bag_single_02.vmdl
+models/props/hr_vertigo/vertigo_concrete_bags/vertigo_concrete_bag_single_03.vmdl
+models/props/hr_vertigo/vertigo_concrete_bags/vertigo_concrete_bags_01.vmdl
+models/props/hr_vertigo/vertigo_concrete_bags/vertigo_concrete_bags_02.vmdl
+models/props/hr_vertigo/vertigo_crate_tarp/vertigo_crate_tarp.vmdl
+models/props/hr_vertigo/vertigo_elevator/vertigo_elevator_cabin.vmdl
+models/props/hr_vertigo/vertigo_paint_bucket/vertigo_paint_bucket.vmdl
+models/props/hr_vertigo/vertigo_sign/sign_number.vmdl
+models/props/hr_vertigo/vertigo_toolbox/vertigo_toolbox.vmdl
+models/props/hr_vertigo/vertigo_tools/electric_driller.vmdl
+models/props/hr_vertigo/vertigo_tools/screwdriver.vmdl
+models/props/hr_vertigo/vertigo_tools/socket_wrench.vmdl
+models/props/hr_vertigo/vertigo_tools/toolbox_small.vmdl
+models/props/hr_vertigo/vertigo_traffic_cone/traffic_cone.vmdl
+models/props/hr_vertigo/warning_barrel/warning_barrel.vmdl
+models/props/hr_vertigo/wood_crate_1/wood_crate_1.vmdl
 models/props/crates/agents_dossier_01.vmdl
 models/props/crates/crate_aus2025_promo_de_ancient.vmdl
 models/props/crates/crate_aus2025_promo_de_anubis.vmdl

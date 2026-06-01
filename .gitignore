@@ -6,5 +6,6 @@
 *.age
 docs/private/
 
-# Static asset checked in despite the *.txt blanket ignore
+# Static assets checked in despite the *.txt blanket ignore
 !hosts/media/modules/cs2-presets/gamemodes_server.txt
+!hosts/media/modules/cs2-presets/prophunt-maps/*.txt
