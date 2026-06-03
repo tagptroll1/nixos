@@ -23,16 +23,14 @@
 # CounterStrikeSharp.API and it has no transitive nuget deps.
 buildDotnetModule (finalAttrs: {
   pname = "cs2-prophunt";
-  version = "0.1.0-unstable-2026-06-01";
+  version = "0.1.0-unstable-2026-06-03";
 
   src = fetchFromGitHub {
     owner = "tagptroll1";
     repo = "PropHunt";
-    # TODO: bump after pushing the patch-fold-in commit. Until then, the rev
-    # below is upstream's last commit (will fail because the fork's main has
-    # since diverged once you push). Use lib.fakeHash to TOFU the hash.
-    rev = "f2d820dc3fbef7d47aefe95832bd2ef4923c86a4";
-    hash = "sha256-tcWSg6a/ANkmHrojT1FSaLs8hv1l49M+HOhxQL+wM4M=";
+    # Seeker out-of-world death + "Failed to join game" fixes.
+    rev = "d57be906ad3282a2f44ce7b36cadfcd4379fa5b3";
+    hash = lib.fakeHash;
   };
 
   projectFile = "src/PropHunt.csproj";
