@@ -30,7 +30,7 @@ buildDotnetModule (finalAttrs: {
     repo = "PropHunt";
     # Seeker out-of-world death + "Failed to join game" fixes.
     rev = "d57be906ad3282a2f44ce7b36cadfcd4379fa5b3";
-    hash = lib.fakeHash;
+    hash = "sha256-M9uw3bgFVRujuqn0ZMF88uF7rhGYBXwa6ZqFyUxsPmc=";
   };
 
   projectFile = "src/PropHunt.csproj";
