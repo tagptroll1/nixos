@@ -45,9 +45,11 @@ in
 
 		script = ''
 			set -e
+			repo="https://github.com/tagptroll1/karoline-portfolio.git"
 			if [ ! -d .git ]; then
-				git clone https://github.com/tagptroll1/tagptroll1.github.io.git .
+				git clone "$repo" .
 			else
+				git remote set-url origin "$repo"
 				git fetch origin
 				git reset --hard origin/main
 			fi
