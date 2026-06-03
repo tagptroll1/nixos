@@ -29,8 +29,8 @@ buildDotnetModule (finalAttrs: {
     owner = "tagptroll1";
     repo = "PropHunt";
     # Seeker out-of-world death + "Failed to join game" fixes.
-    rev = "d57be906ad3282a2f44ce7b36cadfcd4379fa5b3";
-    hash = "sha256-M9uw3bgFVRujuqn0ZMF88uF7rhGYBXwa6ZqFyUxsPmc=";
+    rev = "8f149e0e37328956e512b85446b9384e532b8910";
+    hash = "sha256-W/zqYuqW0nLLgPF3ovwijqnH3tZpqSTeGzrSxQ6BTO4=";
   };
 
   projectFile = "src/PropHunt.csproj";
