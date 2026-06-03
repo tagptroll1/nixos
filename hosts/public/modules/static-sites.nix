@@ -8,22 +8,62 @@ in
 {
 	services.nginx.enable = true;
 
-	# Karoline's portfolio — served on port 9999
+	# Karoline's portfolio — served on port 9999.
+	# Mirrors the repo's nginx.conf (gzip text-only, cache headers, video
+	# byte-range streaming). All directives are scoped to this vhost so the
+	# other sites this nginx serves are unaffected.
 	services.nginx.virtualHosts."_" = {
 		listen  = [{ addr = "0.0.0.0"; port = 9999; }];
 		default = true;
 
+		root  = karolinePortfolio;
+
+		extraConfig = ''
+			sendfile          on;
+			tcp_nopush        on;
+			keepalive_timeout 65;
+
+			# gzip for text-ish assets only. Never gzip video: a gzipped
+			# response can't be served with byte ranges, which would kill
+			# seeking/streaming.
+			gzip            on;
+			gzip_vary       on;
+			gzip_min_length 1024;
+			gzip_types      text/css application/javascript image/svg+xml application/json;
+		'';
+
+		# HTML: always revalidate so edits show up without a hard refresh.
 		locations."/" = {
-			root        = karolinePortfolio;
 			index       = "index.html";
-			extraConfig = "try_files $uri $uri/ =404;";
+			extraConfig = ''
+				try_files $uri $uri/ =404;
+				add_header Cache-Control "no-cache";
+			'';
+		};
+
+		# Static media + scripts/styles: long-lived cache.
+		locations."/assets/" = {
+			extraConfig = ''
+				add_header Cache-Control "public, max-age=2592000";
+			'';
+		};
+
+		# Video: keep gzip off so nginx serves Range requests natively
+		# (Accept-Ranges: bytes + 206), which is what makes seeking and
+		# lightbox playback-before-full-download work.
+		locations."/assets/videos/" = {
+			extraConfig = ''
+				gzip off;
+				add_header Cache-Control "public, max-age=2592000";
+			'';
 		};
 	};
 
 	# Directories for the static builder
 	systemd.tmpfiles.rules = [
 		"d ${buildRoot}/karoline    0755 staticbuilder staticbuilder - -"
-		"d ${karolinePortfolio}     0755 nginx          nginx          - -"
+		# Group-writable so the staticbuilder user (group nginx) can rsync into it; nginx reads it
+		"d ${karolinePortfolio}     2775 nginx          nginx          - -"
 	];
 
 	# Pull and deploy Karoline's site from GitHub
