@@ -62,8 +62,9 @@ in
 	# Directories for the static builder
 	systemd.tmpfiles.rules = [
 		"d ${buildRoot}/karoline    0755 staticbuilder staticbuilder - -"
-		# Group-writable so the staticbuilder user (group nginx) can rsync into it; nginx reads it
-		"d ${karolinePortfolio}     2775 nginx          nginx          - -"
+		# Owned by staticbuilder so it can rsync (incl. set dir times); group
+		# nginx + world-readable perms let nginx serve it read-only.
+		"d ${karolinePortfolio}     0755 staticbuilder nginx          - -"
 	];
 
 	# Pull and deploy Karoline's site from GitHub
