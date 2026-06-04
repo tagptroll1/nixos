@@ -31,6 +31,9 @@
 		./modules/immich.nix
 		./modules/immich-public-proxy.nix
 		./modules/jellyfin.nix
+		./modules/media-group.nix
+		./modules/vpn.nix
+		./modules/arr.nix
 	];
 
 	sops.age.keyFile = "/etc/age/host.key";
@@ -42,6 +45,11 @@
 		"opencloud/collabora_env" = {
 			sopsFile = ./secrets/opencloudSecret.yaml;
 			key = "collabora_env";
+		};
+		"vpn/wg.conf" = {
+			sopsFile = ./secrets/vpnSecret.yaml;
+			key = "wg.conf";
+			mode = "0400";
 		};
 		"caddy/domeneshop_token" = {
 			sopsFile = ./secrets/caddySecret.yaml;

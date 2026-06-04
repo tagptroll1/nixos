@@ -22,9 +22,13 @@
       url = "gitlab:simple-nixos-mailserver/nixos-mailserver/main";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    vpn-confinement = {
+      url = "github:Maroka-chan/VPN-Confinement";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { nixpkgs, home-manager, sops-nix, quadlet-nix, simple-nixos-mailserver, ... }@inputs:
+  outputs = { nixpkgs, home-manager, sops-nix, quadlet-nix, simple-nixos-mailserver, vpn-confinement, ... }@inputs:
   let
     hosts = import ./lib/hosts.nix;
   in
@@ -99,6 +103,7 @@
         };
         modules = [
           sops-nix.nixosModules.sops
+          vpn-confinement.nixosModules.default
           ./hosts/media
           home-manager.nixosModules.home-manager
           {
