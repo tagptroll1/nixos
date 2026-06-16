@@ -22,6 +22,7 @@
 		./modules/wordpress.nix
 		./modules/static-sites.nix
 		./modules/peterssoncoffee.nix
+		./modules/byggogbedrag.nix
 		./modules/exporters.nix
 	];
 

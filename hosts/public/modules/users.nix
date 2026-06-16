@@ -19,4 +19,12 @@
 		home         = "/var/lib/peterssoncoffee";
 	};
 	users.groups.peterssoncoffee = {};
+
+	# System user for the byggogbedrag.no Node.js app
+	users.users.byggogbedrag = {
+		isSystemUser = true;
+		group        = "byggogbedrag";
+		home         = "/var/lib/byggogbedrag";
+	};
+	users.groups.byggogbedrag = {};
 }

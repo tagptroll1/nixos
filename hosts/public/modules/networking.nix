@@ -13,6 +13,7 @@
 				993   # IMAPS
 				8080  # WordPress via Pangolin
 				3000  # petersson.coffee via Pangolin
+				3001  # byggogbedrag.no via Pangolin
 				9999  # Karoline's static site
 				9100  # Prometheus node exporter
 				4040  # Prometheus nginxlog exporter
