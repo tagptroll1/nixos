@@ -1,4 +1,8 @@
-{ ... }: {
+{ pkgs, ... }: {
+	# Ghostty terminfo so SSHing in from Ghostty (TERM=xterm-ghostty) works —
+	# without it sudo/editors/clear fail with "unknown terminal type".
+	environment.systemPackages = [ pkgs.ghostty.terminfo ];
+
 	boot.loader = {
 		systemd-boot.enable = true;
 		efi.canTouchEfiVariables = true;
