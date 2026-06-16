@@ -1,4 +1,4 @@
-{ config, ... }: {
+{ config, lib, ... }: {
 	mailserver = {
 		enable = true;
 		fqdn = "mail.yesbutmaybe.no";
@@ -63,7 +63,16 @@
 			"10.0.10.0/24"
 			"10.0.20.0/24"  # private host — trusted relay, no auth needed
 		];
-		smtp_sasl_auth_enable = "no";
+		# Authenticate to the Pangolin VPS smarthost. Home WAN IP is dynamic,
+		# so IP-based mynetworks trust on the VPS breaks on every ISP rotation;
+		# SASL survives it. Creds live in sops; TLS required so they aren't sent
+		# in clear.
+		smtp_sasl_auth_enable = "yes";
+		smtp_sasl_password_maps = [ "texthash:${config.sops.secrets."mail_relay_sasl_passwd".path}" ];
+		smtp_sasl_security_options = "noanonymous";
+		# Override the module's DANE default — relayhost has no TLSA record and
+		# all outbound goes through it, so require STARTTLS to protect the creds.
+		smtp_tls_security_level = lib.mkForce "encrypt";
 		myorigin = "yesbutmaybe.no";
 		mydomain = "yesbutmaybe.no";
 		myhostname = "mail.yesbutmaybe.no";
