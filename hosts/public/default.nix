@@ -19,6 +19,7 @@
 		./modules/users.nix
 		./modules/packages.nix
 		./modules/mailserver.nix
+		./modules/roundcube.nix
 		./modules/wordpress.nix
 		./modules/static-sites.nix
 		./modules/peterssoncoffee.nix
@@ -46,6 +47,9 @@
 			neededForUsers = true;
 		};
 		"mail_changes_hashed_password" = {
+			neededForUsers = true;
+		};
+		"mail_byggogbedrag_hashed_password" = {
 			neededForUsers = true;
 		};
 	};

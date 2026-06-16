@@ -3,7 +3,7 @@
 		enable = true;
 		fqdn = "mail.yesbutmaybe.no";
 		sendingFqdn = "mail.yesbutmaybe.no";
-		domains = [ "yesbutmaybe.no" ];
+		domains = [ "yesbutmaybe.no" "byggogbedrag.no" ];
 
 		enableSubmission = true;
 		enableSubmissionSsl = false; # 587 uses STARTTLS, not SSL
@@ -26,6 +26,11 @@
 			};
 			"changes@yesbutmaybe.no" = {
 				hashedPasswordFile = config.sops.secrets."mail_changes_hashed_password".path;
+			};
+			"post@byggogbedrag.no" = {
+				hashedPasswordFile = config.sops.secrets."mail_byggogbedrag_hashed_password".path;
+				# Catch-all: any *@byggogbedrag.no not another account/alias lands here.
+				catchAll = [ "byggogbedrag.no" ];
 			};
 		};
 
