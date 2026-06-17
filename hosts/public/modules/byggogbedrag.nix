@@ -5,6 +5,13 @@ let
   appPort = 3001;
 in
 {
+  # ── Mailserver name → loopback ───────────────────────────────────────────────
+  # Public DNS for mail.yesbutmaybe.no has no usable A/AAAA for this host; lookups
+  # fall through the *.yesbutmaybe.no wildcard to the VPS, which serves a
+  # self-signed cert on 587. The mailserver is local — pin the name to loopback so
+  # the app reaches local postfix and validates the real LE cert (CN matches).
+  networking.hosts."127.0.0.1" = [ "mail.yesbutmaybe.no" ];
+
   # ── Runtime service (build on start, then serve) ─────────────────────────────
   systemd.services."byggogbedrag" = {
     description = "byggogbedrag.no SvelteKit site";
