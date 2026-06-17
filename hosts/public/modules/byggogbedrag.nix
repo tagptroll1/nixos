@@ -20,6 +20,10 @@ in
       PORT     = toString appPort;
       ORIGIN   = "https://byggogbedrag.no";
       HOME     = appDir;
+      # SMTP — mailserver on this host. 587 = STARTTLS. SMTP_PASS via sops below.
+      SMTP_HOST = "mail.yesbutmaybe.no";
+      SMTP_PORT = "587";
+      SMTP_USER = "post@byggogbedrag.no";
     };
 
     preStart = ''
@@ -45,7 +49,10 @@ in
       TimeoutStartSec  = "300";
       ProtectSystem    = "full";
       ReadWritePaths   = [ appDir ];
-      EnvironmentFile  = config.sops.secrets."github_token".path;
+      EnvironmentFile  = [
+        config.sops.secrets."github_token".path
+        config.sops.secrets."byggogbedrag_smtp_pass".path
+      ];
     };
   };
 

@@ -40,6 +40,9 @@
 		"domeneshop_api_token" = {};
 		"domeneshop_api_secret" = {};
 		"github_token" = {};
+		# Plaintext SMTP password for post@byggogbedrag.no, used by the
+		# SvelteKit site to authenticate to the local mailserver. Format: SMTP_PASS=...
+		"byggogbedrag_smtp_pass" = {};
 		"mail_hashed_password" = {
 			neededForUsers = true;
 		};
