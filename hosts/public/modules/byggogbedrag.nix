@@ -16,6 +16,10 @@ in
 
     environment = {
       NODE_ENV = "production";
+      # mail.yesbutmaybe.no has no proper AAAA — IPv6 lookup falls through to the
+      # *.yesbutmaybe.no wildcard (the VPS), which serves a self-signed cert on 587.
+      # IPv4 resolves to the local mailserver with the valid LE cert. Force v4.
+      NODE_OPTIONS = "--dns-result-order=ipv4first";
       HOST     = "0.0.0.0";
       PORT     = toString appPort;
       ORIGIN   = "https://byggogbedrag.no";
