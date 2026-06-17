@@ -11,28 +11,21 @@ let
 
   serveEnv = {
     NODE_ENV = "production";
-    # mail.yesbutmaybe.no has no proper AAAA — IPv6 lookup falls through to the
-    # *.yesbutmaybe.no wildcard (the VPS), which serves a self-signed cert on 587.
-    # IPv4 resolves to the local mailserver with the valid LE cert. Force v4.
-    NODE_OPTIONS = "--dns-result-order=ipv4first";
     HOST     = "0.0.0.0";
     PORT     = toString appPort;
     ORIGIN   = "https://byggogbedrag.no";
     HOME     = appDir;
     # SMTP — mailserver on this host. 587 = STARTTLS. SMTP_PASS via sops below.
-    SMTP_HOST = "mail.yesbutmaybe.no";
+    # Connect to literal loopback: systemd-resolved + the *.yesbutmaybe.no wildcard
+    # hijack the name (even over /etc/hosts), routing to the VPS's self-signed cert.
+    # SMTP_SERVERNAME validates the local LE cert (CN=mail.yesbutmaybe.no).
+    SMTP_HOST = "127.0.0.1";
+    SMTP_SERVERNAME = "mail.yesbutmaybe.no";
     SMTP_PORT = "587";
     SMTP_USER = "post@byggogbedrag.no";
   };
 in
 {
-  # ── Mailserver name → loopback ───────────────────────────────────────────────
-  # Public DNS for mail.yesbutmaybe.no has no usable A/AAAA for this host; lookups
-  # fall through the *.yesbutmaybe.no wildcard to the VPS, which serves a
-  # self-signed cert on 587. The mailserver is local — pin the name to loopback so
-  # the app reaches local postfix and validates the real LE cert (CN matches).
-  networking.hosts."127.0.0.1" = [ "mail.yesbutmaybe.no" ];
-
   # ── Build — fetch + compile into appDir. Runs while the old server keeps ──────
   #    serving, so a rebuild never takes the site offline. Inactive once done, so
   #    a plain `nixos-rebuild switch` does NOT re-trigger it.
