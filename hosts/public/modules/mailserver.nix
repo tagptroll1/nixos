@@ -34,6 +34,16 @@
 			};
 		};
 
+		# Forward everything that lands in post@byggogbedrag.no (incl. catch-all)
+		# to the main inbox. Listing the address itself keeps a local copy too —
+		# postfix delivers the self-reference locally, no loop.
+		forwards = {
+			"post@byggogbedrag.no" = [
+				"post@byggogbedrag.no"
+				"thomas@petersson.priv.no"
+			];
+		};
+
 		x509.useACMEHost = "mail.yesbutmaybe.no";
 	};
 
