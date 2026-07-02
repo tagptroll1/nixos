@@ -20,6 +20,7 @@
 		./modules/packages.nix
 		./modules/mailserver.nix
 		./modules/roundcube.nix
+		./modules/roundcube-ybmn.nix
 		./modules/wordpress.nix
 		./modules/static-sites.nix
 		./modules/peterssoncoffee.nix
