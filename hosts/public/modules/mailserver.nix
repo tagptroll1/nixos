@@ -68,10 +68,12 @@
 
 	services.postfix.settings.main = {
 		relayhost = [ "[91.99.59.171]:587" ];
+		# Single hosts only, not whole subnets — any device in a trusted range
+		# can relay unauthenticated with our domain reputation.
 		mynetworks = [
 			"127.0.0.0/8"
-			"10.0.10.0/24"
-			"10.0.20.0/24"  # private host — trusted relay, no auth needed
+			"10.0.10.10/32" # this host — roundcube connects via own LAN IP
+			"10.0.20.5/32"  # private host — trusted relay, no auth needed
 		];
 		# Authenticate to the Pangolin VPS smarthost. Home WAN IP is dynamic,
 		# so IP-based mynetworks trust on the VPS breaks on every ISP rotation;
