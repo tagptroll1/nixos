@@ -29,7 +29,7 @@ in
     wantedBy    = [ "multi-user.target" ];   # build once at boot
     before      = [ "peterssoncoffee.service" ];
 
-    path = with pkgs; [ git nodejs coreutils bash ];
+    path = with pkgs; [ git nodejs pnpm coreutils bash ];
 
     environment = buildEnv;
 
@@ -51,8 +51,8 @@ in
           git -C ${appDir} reset --hard origin/master
         fi
         cd ${appDir}
-        NODE_ENV=development npm ci
-        npm run build
+        pnpm install --frozen-lockfile
+        pnpm build
       '';
     };
   };
