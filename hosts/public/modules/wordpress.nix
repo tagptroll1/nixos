@@ -198,6 +198,7 @@ in
 			User            = "nginx";
 			Group           = "nginx";
 			RemainAfterExit = true;
+			PrivateTmp      = true;
 		};
 
 		script = ''
@@ -275,6 +276,8 @@ in
 
 			find "$WP_DIR" -type d -exec chmod 755 {} \;
 			find "$WP_DIR" -type f -exec chmod 644 {} \;
+			# DB creds + secret keys — keep away from other local users
+			chmod 640 "$WP_DIR/wp-config.php"
 
 			echo "WordPress setup complete."
 		'';
