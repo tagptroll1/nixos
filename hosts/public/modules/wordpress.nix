@@ -191,7 +191,7 @@ in
 		# Only runs if wp-config.php doesn't exist yet
 		unitConfig.ConditionPathExists = "!${wordpressRoot}/wp-config.php";
 
-		path = with pkgs; [ curl gnutar gzip unzip coreutils ];
+		path = with pkgs; [ curl gnutar gzip unzip coreutils gnused gawk ];
 
 		serviceConfig = {
 			Type            = "oneshot";
@@ -224,6 +224,20 @@ in
 			sed -i "s/database_name_here/wordpress/" "$WP_DIR/wp-config.php"
 			sed -i "s/username_here/wordpress/"       "$WP_DIR/wp-config.php"
 			sed -i "s/password_here//"                "$WP_DIR/wp-config.php"
+
+			# Replace the sample's placeholder secret keys with real ones — the
+			# placeholders are publicly known, which makes auth cookies forgeable.
+			SALTS=$(mktemp)
+			curl -fsSL https://api.wordpress.org/secret-key/1.1/salt/ -o "$SALTS"
+			awk -v salts="$SALTS" '
+				/put your unique phrase here/ {
+					if (!done) { while ((getline l < salts) > 0) print l; done = 1 }
+					next
+				}
+				{ print }
+			' "$WP_DIR/wp-config.php" > "$WP_DIR/wp-config.php.new"
+			mv "$WP_DIR/wp-config.php.new" "$WP_DIR/wp-config.php"
+			rm "$SALTS"
 
 			# Disable built-in HTTP cron (use systemd timer instead)
 			sed -i "/require_once.*wp-settings\.php/i\\define( 'DISABLE_WP_CRON', true );" "$WP_DIR/wp-config.php"
