@@ -1,7 +1,6 @@
 { pkgs, ... }: {
 	environment.systemPackages = with pkgs; [
 		sops
-		docker
 		vim
 		git
 		curl
@@ -10,8 +9,5 @@
 		wget
 		bind       # DNS utilities (dig, nslookup)
 		nixd
-		gcc
-		cargo
-		rustup
 	];
 }
