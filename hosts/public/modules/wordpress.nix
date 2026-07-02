@@ -242,18 +242,36 @@ in
 			# Disable built-in HTTP cron (use systemd timer instead)
 			sed -i "/require_once.*wp-settings\.php/i\\define( 'DISABLE_WP_CRON', true );" "$WP_DIR/wp-config.php"
 
-			# Dynamic multi-domain URL detection (Pangolin + direct LAN access)
-			sed -i "/require_once.*wp-settings\.php/i\\
-\\
-/* Dynamic multi-domain URL detection */\\
-if ( isset( \$_SERVER['HTTP_HOST'] ) ) {\\
-    \$scheme = ( ! empty( \$_SERVER['HTTPS'] ) \&\& \$_SERVER['HTTPS'] !== 'off' )\\
-              || ( isset( \$_SERVER['HTTP_X_FORWARDED_PROTO'] )\\
-                   \&\& \$_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https' )\\
-              ? 'https' : 'http';\\
-    define( 'WP_HOME',    \$scheme . '://' . \$_SERVER['HTTP_HOST'] );\\
-    define( 'WP_SITEURL', \$scheme . '://' . \$_SERVER['HTTP_HOST'] );\\
-}" "$WP_DIR/wp-config.php"
+			# Multi-domain URL detection (Pangolin + direct LAN access), restricted
+			# to known hosts — trusting HTTP_HOST blindly enables password-reset
+			# poisoning via a spoofed Host header.
+			URLCFG=$(mktemp)
+			cat > "$URLCFG" <<-'EOF'
+
+				/* Multi-domain URL detection — whitelisted hosts only */
+				$sps_allowed_hosts = array( 'sletteposten.no', 'www.sletteposten.no', 'admin.sletteposten.no' );
+				if ( isset( $_SERVER['HTTP_HOST'] ) && in_array( $_SERVER['HTTP_HOST'], $sps_allowed_hosts, true ) ) {
+				    $scheme = ( ! empty( $_SERVER['HTTPS'] ) && $_SERVER['HTTPS'] !== 'off' )
+				              || ( isset( $_SERVER['HTTP_X_FORWARDED_PROTO'] )
+				                   && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https' )
+				              ? 'https' : 'http';
+				    define( 'WP_HOME',    $scheme . '://' . $_SERVER['HTTP_HOST'] );
+				    define( 'WP_SITEURL', $scheme . '://' . $_SERVER['HTTP_HOST'] );
+				} else {
+				    define( 'WP_HOME',    'https://sletteposten.no' );
+				    define( 'WP_SITEURL', 'https://sletteposten.no' );
+				}
+			EOF
+			awk -v cfg="$URLCFG" '
+				/require_once.*wp-settings\.php/ && !done {
+					while ((getline l < cfg) > 0) print l
+					print ""
+					done = 1
+				}
+				{ print }
+			' "$WP_DIR/wp-config.php" > "$WP_DIR/wp-config.php.new"
+			mv "$WP_DIR/wp-config.php.new" "$WP_DIR/wp-config.php"
+			rm "$URLCFG"
 
 			find "$WP_DIR" -type d -exec chmod 755 {} \;
 			find "$WP_DIR" -type f -exec chmod 644 {} \;
