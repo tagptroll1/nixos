@@ -70,9 +70,16 @@
 		relayhost = [ "[91.99.59.171]:587" ];
 		# Single hosts only, not whole subnets — any device in a trusted range
 		# can relay unauthenticated with our domain reputation.
+		#
+		# NEVER add 10.0.10.10 (own LAN IP): newt dials tunneled connections
+		# from that address, so every internet client on the Pangolin-forwarded
+		# mail ports would be trusted — that made us an open relay (abused
+		# 2026-06-28, caught in queue). Roundcube and the byggogbedrag app
+		# authenticate with SASL and need no IP trust. Same reason the Pangolin
+		# targets for 25/587 must stay 10.0.10.10, not localhost — 127.0.0.1
+		# is in mynetworks.
 		mynetworks = [
 			"127.0.0.0/8"
-			"10.0.10.10/32" # this host — roundcube connects via own LAN IP
 			"10.0.20.5/32"  # private host — trusted relay, no auth needed
 		];
 		# Authenticate to the Pangolin VPS smarthost. Home WAN IP is dynamic,
