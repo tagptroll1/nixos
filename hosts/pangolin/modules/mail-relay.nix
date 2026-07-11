@@ -24,7 +24,9 @@ in {
 
 	# Cyrus SASL backend for smtpd; accounts live in /etc/sasldb2 (managed
 	# with `saslpasswd2 -c -u yesbutmaybe.no <user>`, root:postfix 0640).
-	environment.etc."postfix/sasl/smtpd.conf".text = ''
+	# Lives in /etc/sasl2, not /etc/postfix — the postfix module owns all of
+	# /etc/postfix as a single symlink, so nothing else can add files there.
+	environment.etc."sasl2/smtpd.conf".text = ''
 		pwcheck_method: auxprop
 		auxprop_plugin: sasldb
 		mech_list: PLAIN LOGIN
@@ -69,7 +71,7 @@ in {
 				# Never add device or LAN IPs here — IP trust with our domain
 				# reputation is how open relays happen.
 				mynetworks = [ "127.0.0.0/8" ];
-				cyrus_sasl_config_path = "/etc/postfix/sasl";
+				cyrus_sasl_config_path = "/etc/sasl2";
 				smtpd_helo_required = true;
 				smtpd_helo_restrictions = [
 					"permit_mynetworks"
