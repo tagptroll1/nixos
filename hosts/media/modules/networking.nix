@@ -7,7 +7,7 @@
       enable = true;
       allowedTCPPorts = [ 22 80 443 ];
       # tailscale opens its own port via services.tailscale.openFirewall
-      trustedInterfaces = [ "tailscale0" "wt0" ];
+      trustedInterfaces = [ "tailscale0" ];
     };
     interfaces.${hostConfig.interface}.ipv4.addresses = [{
       address = hostConfig.ip;

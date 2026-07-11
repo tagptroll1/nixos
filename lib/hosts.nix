@@ -35,8 +35,9 @@
 		userData = "/home/tagp/.local/share";
   };
 
-  pangoling = {
-    hostname = "pangoling";
+  # Norwegian VPS: yesbutmaybe.no ingress (Pangolin) + outbound mail relay.
+  pangolin = {
+    hostname = "pangolin";
     interface = "ens18";
     ip = "193.200.238.206";
     gateway = "193.200.238.1";

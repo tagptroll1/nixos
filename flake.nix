@@ -74,19 +74,20 @@
         ];
       };
 
-      pangoling = nixpkgs.lib.nixosSystem {
+      # VPS: Pangolin ingress + outbound mail relay for yesbutmaybe.no.
+      pangolin = nixpkgs.lib.nixosSystem {
         specialArgs = {
           inherit inputs;
-          hostConfig = hosts.pangoling;
+          hostConfig = hosts.pangolin;
         };
         modules = [
           sops-nix.nixosModules.sops
-          ./hosts/pangoling
+          ./hosts/pangolin
           home-manager.nixosModules.home-manager
           {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
-            home-manager.extraSpecialArgs = { inherit inputs; hostConfig = hosts.pangoling; };
+            home-manager.extraSpecialArgs = { inherit inputs; hostConfig = hosts.pangolin; };
             home-manager.users.tagp = import ./home/tagp;
           }
         ];

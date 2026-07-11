@@ -22,7 +22,7 @@ in {
   virtualisation.oci-containers.containers.factorio = {
     image = "docker.io/ofsm/ofsm:latest";
     ports = [
-      "34197:34197/udp"      # factorio game port — public via pangoling DNAT
+      "34197:34197/udp"      # factorio game port — public via Pangolin raw UDP resource (newt tunnel)
       "127.0.0.1:8090:80"    # FSM web UI — loopback only, exposed via Caddy
     ];
     environment = {

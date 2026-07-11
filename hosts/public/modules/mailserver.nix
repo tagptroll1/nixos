@@ -8,7 +8,7 @@
 		enableSubmission = true;
 		enableSubmissionSsl = false; # 587 uses STARTTLS, not SSL
 
-		stateVersion = 3;
+		stateVersion = 5;
 
 		storage.path = "/var/vmail";
 		dkim.keyDirectory = "/var/dkim";

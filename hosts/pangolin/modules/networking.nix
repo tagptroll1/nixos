@@ -3,19 +3,19 @@
 		hostName = hostConfig.hostname;
 		domain = "yesbutmaybe.no";
 		useDHCP = false;
+		# Raw TCP/UDP resource ports (mail, game servers) are opened in
+		# modules/pangolin.nix next to their traefik entryPoints.
 		firewall = {
 			enable = true;
 			allowedTCPPorts = [
 				22    # SSH
-				80    # HTTP / ACME
-				443   # HTTPS
+				80    # HTTP / ACME challenges
+				443   # HTTPS / dashboard / proxied resources
+				587   # Submission (postfix smarthost for own devices/services)
 			];
-			# Netbird wireguard port; the module also opens this, but listed
-			# explicitly here for clarity.
 			allowedUDPPorts = [
-				51820  # NetBird wireguard
-				27015  # CS2 → forwarded to media (see forwarding.nix)
-				34197  # Factorio → forwarded to media (see forwarding.nix)
+				51820 # Gerbil wireguard (newt site tunnels)
+				21820 # Gerbil relay port
 			];
 		};
 		interfaces.${hostConfig.interface}.ipv4.addresses = [{

@@ -20,7 +20,6 @@
 		./modules/storage.nix
 		./modules/gpu.nix
 		./modules/tailscale.nix
-		./modules/netbird.nix
 		./modules/caddy.nix
 		./modules/cockpit.nix
 		./modules/podman.nix

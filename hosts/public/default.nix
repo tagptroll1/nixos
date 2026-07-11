@@ -57,7 +57,8 @@
 			neededForUsers = true;
 		};
 		# Postfix relay SASL creds for the Pangolin VPS smarthost.
-		# Format (one line): [91.99.59.171]:587 relay@yesbutmaybe.no:PASSWORD
+		# Format (one line): [HOST]:587 relay@yesbutmaybe.no:PASSWORD
+		# where [HOST]:587 must equal relayhost in modules/mailserver.nix.
 		"mail_relay_sasl_passwd" = {
 			owner = "postfix";
 		};
