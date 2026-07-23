@@ -76,7 +76,8 @@ in {
       };
       environmentFiles = [ config.sops.templates."palworld.env".path ];
       volumes = [ "${palworldData}:/palworld" ];
-      extraOptions = [ "--network=palworld-net" ];
+      # NET_RAW: AUTO_PAUSE_ENABLED uses raw sockets to detect player connections.
+      extraOptions = [ "--network=palworld-net" "--cap-add=NET_RAW" ];
     };
 
     palworld-dashboard = {
