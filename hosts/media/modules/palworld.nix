@@ -83,7 +83,7 @@ in {
     palworld-dashboard = {
       image = "ghcr.io/rnz01/palworld-server-dashboard:latest";
       dependsOn = [ "palworld" ];
-      ports = [ "127.0.0.1:3000:3000" ];   # loopback — internal only via Caddy
+      ports = [ "127.0.0.1:3939:3000" ];   # host 3939 (3000 is immich-public-proxy); loopback, internal via Caddy
       environment = {
         PALWORLD_REST_URL = "http://palworld:8212";   # over palworld-net
       };
