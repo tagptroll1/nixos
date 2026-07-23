@@ -15,6 +15,7 @@ let
 	rawUdpPorts = [
 		27015 # CS2 → media
 		34197 # Factorio → media
+		8211  # Palworld → media
 	];
 	entryPoint = proto: port:
 		lib.nameValuePair "${proto}-${toString port}"
