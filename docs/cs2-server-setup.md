@@ -13,12 +13,11 @@ aren't obvious from reading the Nix code.
 ```
 laptop (CS2 client)
     │
-    │ netbird overlay (wt0)         OR        public internet
-    │  → 100.x.x.x                            → tv2.yesbutmaybe.no:27015
-    ▼                                            │
-    pangoling (public VM)  ◄── DNAT (ens18 OR wt0 hairpin) ──┘
-        │                                                     
-        │ wt0 overlay → 100.122.55.95
+    │ public internet → tv2.yesbutmaybe.no:27015/udp
+    ▼
+    pangolin VPS (Gigahost, 193.200.238.206)
+        │
+        │ traefik `udp-27015` entrypoint → raw UDP resource → newt tunnel
         ▼
     media (NixOS VM, VMID 201 on home02)
         │
@@ -39,9 +38,10 @@ Key choices:
   refuses to chown across the `/mnt/media` (immich-owned) → subdirs ownership
   boundary, which broke the original setup. A separate `/mnt/games` share
   owned by the Debian `games` user (uid 5 / gid 60) avoids the transition.
-- **Hairpin DNAT on pangoling's `wt0`** so netbird clients can reach the
-  public hostname through the overlay (default NixOS `networking.nat` only
-  DNATs on the external interface).
+- **Pangolin raw UDP resource** carries the game traffic: traefik on the
+  pangolin VPS listens on the `udp-27015` entrypoint (declared in
+  `hosts/pangolin/modules/pangolin.nix` via `rawUdpPorts`) and forwards
+  through the newt tunnel to media. No NAT/DNAT on the VPS.
 
 ---
 
@@ -112,7 +112,7 @@ the line to the relevant `mg_*` group — see *Adding/changing maps* below.
 | `hosts/media/modules/storage.nix` | `games` virtiofs mount + matching `games` user/group (uid 5 / gid 60) + `tagp` in games group |
 | `hosts/media/default.nix` | sops mapping `cs2/api_key` |
 | `hosts/media/secrets/cs2Secret.yaml` | Encrypted secrets: `rcon_pw`, `server_pw`, `api_key` |
-| `hosts/pangoling/modules/forwarding.nix` | DNAT for 27015/udp on both `ens18` (public) and `wt0` (overlay hairpin) |
+| `hosts/pangolin/modules/pangolin.nix` | `rawUdpPorts` → traefik `udp-27015` entrypoint + firewall opening (the raw UDP resource 27015 → `10.2.10.10:27015` lives in the Pangolin dashboard/db) |
 
 Preseeded into `/mnt/games/cs2-modded-custom/` by ExecStartPre on every
 container start (idempotent `install` commands):
@@ -145,8 +145,8 @@ git push                                   # if anything to push
 cd ~/nixos && git pull
 sudo nixos-rebuild switch --flake ~/nixos#media
 
-# 4. pangoling (only if forwarding.nix changed)
-ssh pangoling 'cd ~/nixos && git pull && sudo nixos-rebuild switch --flake ~/nixos#pangoling'
+# 4. pangolin (only if pangolin.nix rawUdpPorts changed)
+ssh tagp@193.200.238.206 'cd ~/nixos && git pull && sudo nixos-rebuild switch --flake ~/nixos#pangolin'
 
 # 5. Verify
 ssh media 'mount | grep games'           # → games on /mnt/games type virtiofs

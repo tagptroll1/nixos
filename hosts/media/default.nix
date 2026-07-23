@@ -23,8 +23,9 @@
 		./modules/caddy.nix
 		./modules/cockpit.nix
 		./modules/podman.nix
-		./modules/cs2.nix
+		# ./modules/cs2.nix  # disabled
 		./modules/factorio.nix
+		./modules/palworld.nix
 		./modules/mealie.nix
 		./modules/opencloud.nix
 		./modules/immich.nix
@@ -66,6 +67,18 @@
 		"cs2/api_key" = {
 			sopsFile = ./secrets/cs2Secret.yaml;
 			key = "api_key";
+		};
+		"palworld/server_pw" = {
+			sopsFile = ./secrets/palworldSecret.yaml;
+			key = "server_pw";
+		};
+		"palworld/admin_pw" = {
+			sopsFile = ./secrets/palworldSecret.yaml;
+			key = "admin_pw";
+		};
+		"palworld/panel_pw" = {
+			sopsFile = ./secrets/palworldSecret.yaml;
+			key = "panel_pw";
 		};
 	};
 

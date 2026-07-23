@@ -60,7 +60,7 @@ More to come..
 - Write down every manual task done outside of the nixos configuration
     - Domeneshop DNS Records
     - Domeneshop API Keys
-    - Hetzner Firewall
+    - Gigahost panel (PTR record for the pangolin VPS)
     - Age public key in .sops.yaml (on my machine)
 - Install other cool services
     - Immich
