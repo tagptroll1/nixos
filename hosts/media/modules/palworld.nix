@@ -1,8 +1,12 @@
-{ config, pkgs, ... }:
+{ config, pkgs, lib, ... }:
 let
   palworldData = "/mnt/games/palworld";
 in
 {
+  # AUTO_REBOOT exits the container cleanly (status 0). oci-containers defaults
+  # Restart="on-failure", so a clean nightly reboot leaves the unit dead until
+  # manually started. Force always so systemd revives it after the reboot.
+  systemd.services.podman-palworld.serviceConfig.Restart = lib.mkForce "always";
   # games:games (uid 5 / gid 60), 2770 — matches factorio/cs2 data on the games
   # share (see storage.nix). PUID/PGID below make the container write as games.
   systemd.tmpfiles.settings."10-palworld" = {
