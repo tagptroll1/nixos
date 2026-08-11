@@ -54,6 +54,20 @@ in {
 		};
 	};
 
+	# The launcher refreshes the prebuilt frontend with
+	#   test -f .next/.nix_skip_setup || { rm -rf .next && cp -rd <store>/.next .; }
+	# and `cp -rd` keeps the store's read-only directory modes. A file cannot be
+	# removed without write permission on its parent, so the next start's
+	# `rm -rf` fails, `&&` short-circuits, the copy is skipped and the new
+	# server code runs against the previous version's .next — which crashes in
+	# createNextServer and takes the dashboard down while the API stays up.
+	# Restoring the write bit before the launcher runs keeps upgrades working.
+	systemd.services.pangolin.preStart = lib.mkAfter ''
+		if [ -d /var/lib/pangolin/.next ]; then
+			chmod -R u+w /var/lib/pangolin/.next
+		fi
+	'';
+
 	networking.firewall = {
 		allowedTCPPorts = rawTcpPorts;
 		allowedUDPPorts = rawUdpPorts;
