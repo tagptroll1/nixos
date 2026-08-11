@@ -1,4 +1,4 @@
-{ config, lib, ... }: {
+{ config, lib, pkgs, ... }: {
   mailserver = {
     enable = true;
     fqdn = "mail.yesbutmaybe.no";
@@ -48,6 +48,37 @@
     };
 
     x509.useACMEHost = "mail.yesbutmaybe.no";
+  };
+
+  # A broken smarthost is silent by nature: notifications pile up in the
+  # deferred queue and expire unseen. Anything still deferred after an hour has
+  # failed at least once, so report it. Delivery is local - the one path that
+  # still works when the smarthost rejects us.
+  systemd.services."postfix-queue-check" = {
+    description = "Alert on mail stuck in the postfix deferred queue";
+    serviceConfig.Type = "oneshot";
+    script = ''
+      stuck=$(${pkgs.findutils}/bin/find /var/spool/postfix/deferred -type f -mmin +60 2>/dev/null | wc -l)
+      if [ "$stuck" -eq 0 ]; then
+        exit 0
+      fi
+      {
+        echo "To: thomas@yesbutmaybe.no"
+        echo "Subject: [public] $stuck message(s) stuck in the mail queue"
+        echo ""
+        ${config.services.postfix.package}/bin/postqueue -p
+      } | /run/wrappers/bin/sendmail -t
+    '';
+  };
+
+  systemd.timers."postfix-queue-check" = {
+    description = "Hourly postfix queue check";
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnBootSec = "30min";
+      OnUnitActiveSec = "1h";
+      Unit = "postfix-queue-check.service";
+    };
   };
 
   # ACME cert for the mail server via Domeneshop DNS-01

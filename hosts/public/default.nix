@@ -8,6 +8,7 @@
 		../../shared/modules/overlays.nix
 		../../shared/modules/motd.nix
 		../../shared/modules/sshd.nix
+		../../shared/modules/unit-failure-mail.nix
 		(import ../../shared/modules/newt.nix {
 			endpoint        = "https://pangolin.yesbutmaybe.no";
 			secretIdKey     = "newt-id";
