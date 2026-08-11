@@ -2,8 +2,33 @@
 # (sqlite db with sites, resources, newt credentials) lives in
 # /var/lib/pangolin/config/ — SERVER_SECRET must match the value the db was
 # created with or its sessions and tokens are invalid.
-{ config, lib, ... }:
+{ config, lib, pkgs, ... }:
 let
+	# nixpkgs still ships 1.21.0. Drop this override once it catches up.
+	# npmDeps has to be built by hand: buildNpmPackage resolves it from the
+	# original arguments before mkDerivation runs, so overrideAttrs cannot
+	# reach npmDepsHash. postPatch is cleared because it rewrites APP_VERSION
+	# from the majorMinor.0 form upstream used to leave in consts.ts, and
+	# 1.21.1 already sets the real version there - its --replace-fail would
+	# abort the build.
+	pangolinPkg = pkgs.fosrl-pangolin.overrideAttrs (finalAttrs: _: {
+		version = "1.21.1";
+		src = pkgs.fetchFromGitHub {
+			owner = "fosrl";
+			repo  = "pangolin";
+			tag   = finalAttrs.version;
+			hash  = "sha256-zfXHev0bN3KVkoiSQ+2WQCgmcCtWi3dib6EiaYmthTo=";
+		};
+		npmDeps = pkgs.fetchNpmDeps {
+			inherit (finalAttrs) src;
+			name = "pangolin-${finalAttrs.version}-npm-deps";
+			# Must equal npmDepsFetcherVersion in the package, or the npm
+			# config hook rejects the prefetched tree.
+			fetcherVersion = finalAttrs.npmDepsFetcherVersion;
+			hash = "sha256-9wPn2nSD9VxMyHywrG52WrChsrJ/ctnKGlMZZEymP6A=";
+		};
+		postPatch = "";
+	});
 	# Ports for the raw TCP/UDP resources in the Pangolin database (mail +
 	# game servers). Each one becomes a traefik entryPoint named tcp-N/udp-N
 	# (the names Pangolin's dynamic traefik config references) and a firewall
@@ -27,6 +52,7 @@ in {
 
 	services.pangolin = {
 		enable = true;
+		package = pangolinPkg;
 		baseDomain = "yesbutmaybe.no";
 		dashboardDomain = "pangolin.yesbutmaybe.no";
 		# Must stay the email of the ACME account stored in
@@ -79,8 +105,11 @@ in {
 		entryPoints = lib.listToAttrs
 			(map (entryPoint "tcp") rawTcpPorts ++ map (entryPoint "udp") rawUdpPorts);
 
-		# Badger version paired with pangolin 1.18.x (module default lags).
-		experimental.plugins.badger.version = lib.mkForce "v1.3.1";
+		# Badger version upstream pairs with pangolin 1.20.x-1.21.x, per
+		# config/traefik/traefik_config.yml in the pangolin repo. The nixpkgs
+		# module default lags. A version traefik cannot fetch makes every http
+		# router 404, so this must track the running pangolin.
+		experimental.plugins.badger.version = lib.mkForce "v1.4.1";
 
 		# Proxied targets with self-signed certs (https upstreams) need this.
 		serversTransport.insecureSkipVerify = true;
