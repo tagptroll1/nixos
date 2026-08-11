@@ -24,6 +24,8 @@ in {
 
 	# Cyrus SASL backend for smtpd; accounts live in /etc/sasldb2 (managed
 	# with `saslpasswd2 -c -u yesbutmaybe.no <user>`, root:postfix 0640).
+	# The realm must match smtpd_sasl_local_domain below; sasldb2 is state,
+	# not config, so it survives rebuilds and has to be edited by hand.
 	# Lives in /etc/sasl2, not /etc/postfix — the postfix module owns all of
 	# /etc/postfix as a single symlink, so nothing else can add files there.
 	environment.etc."sasl2/smtpd.conf".text = ''
@@ -42,6 +44,11 @@ in {
 
 		submissionOptions = {
 			smtpd_sasl_auth_enable = "yes";
+			# Accounts in sasldb2 are keyed user@realm. Without this, cyrus
+			# derives the realm from this machine's own hostname, so clients
+			# sending a bare username are looked up under the wrong key and
+			# every auth fails. Must equal the -u passed to saslpasswd2.
+			smtpd_sasl_local_domain = "yesbutmaybe.no";
 			smtpd_sasl_security_options = "noanonymous";
 			smtpd_tls_security_level = "encrypt";
 			smtpd_client_restrictions = "permit_sasl_authenticated,reject";
