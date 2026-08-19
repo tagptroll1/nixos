@@ -145,16 +145,20 @@ in {
 		allowedUDPPorts = rawUdpPorts;
 	};
 
-	# Badger source tree for experimental.localPlugins. The symlink is
-	# replaced on every activation, so a version bump above takes effect on
-	# the next traefik restart.
-	systemd.tmpfiles.rules = [
-		"d ${traefikDataDir}/plugins-local              0750 traefik fossorial - -"
-		"d ${traefikDataDir}/plugins-local/src          0750 traefik fossorial - -"
-		"d ${traefikDataDir}/plugins-local/src/github.com 0750 traefik fossorial - -"
-		"d ${badgerLocalDir}                            0750 traefik fossorial - -"
-		"L+ ${badgerLocalDir}/badger                    - - - - ${badgerSrc}"
-	];
+	# Badger source tree for experimental.localPlugins. The symlink is replaced
+	# on every start, so a version bump above takes effect on the next restart.
+	#
+	# This cannot be systemd.tmpfiles.rules: /var/lib/pangolin/config is owned
+	# by pangolin and its traefik/ subdirectory by traefik, and systemd-tmpfiles
+	# aborts a rule when ownership changes between two non-root users mid-path
+	# ("Detected unsafe path transition ... during canonicalization"), so the
+	# symlink was silently never created. Doing it in preStart also removes an
+	# ordering race - tmpfiles-resetup and traefik have no dependency between
+	# them, and traefik reads the plugin manifest only at startup.
+	systemd.services.traefik.preStart = lib.mkAfter ''
+		install -d -m 0750 ${badgerLocalDir}
+		ln -sfn ${badgerSrc} ${badgerLocalDir}/badger
+	'';
 
 	# The traefik module only defines web/websecure; raw resources need their
 	# ports declared statically.
