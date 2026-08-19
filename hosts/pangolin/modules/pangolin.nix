@@ -2,36 +2,12 @@
 # (sqlite db with sites, resources, newt credentials) lives in
 # /var/lib/pangolin/config/ — SERVER_SECRET must match the value the db was
 # created with or its sessions and tokens are invalid.
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, inputs, ... }:
 let
-	# nixpkgs still ships 1.21.0. Drop this override once it catches up.
-	# npmDeps has to be built by hand: buildNpmPackage resolves it from the
-	# original arguments before mkDerivation runs, so overrideAttrs cannot
-	# reach npmDepsHash. postPatch is cleared because it rewrites APP_VERSION
-	# from the majorMinor.0 form upstream used to leave in consts.ts, and
-	# 1.21.1 already sets the real version there - its --replace-fail would
-	# abort the build.
-	pangolinPkg = pkgs.fosrl-pangolin.overrideAttrs (finalAttrs: _: {
-		version = "1.21.1";
-		src = pkgs.fetchFromGitHub {
-			owner = "fosrl";
-			repo  = "pangolin";
-			tag   = finalAttrs.version;
-			hash  = "sha256-zfXHev0bN3KVkoiSQ+2WQCgmcCtWi3dib6EiaYmthTo=";
-		};
-		npmDeps = pkgs.fetchNpmDeps {
-			inherit (finalAttrs) src;
-			name = "pangolin-${finalAttrs.version}-npm-deps";
-			# Must equal npmDepsFetcherVersion in the package, or the npm
-			# config hook rejects the prefetched tree.
-			fetcherVersion = finalAttrs.npmDepsFetcherVersion;
-			hash = "sha256-9wPn2nSD9VxMyHywrG52WrChsrJ/ctnKGlMZZEymP6A=";
-		};
-		postPatch = "";
-	});
-	# Badger auth middleware, vendored instead of downloaded. Version pairs
-	# with pangolin 1.20.x-1.21.x, per config/traefik/traefik_config.yml in
-	# the pangolin repo.
+	# Badger auth middleware, vendored instead of downloaded. v1.4.1 is what
+	# config/traefik/traefik_config.yml pins at the pangolin 1.21.1 tag. Newer
+	# badger releases target unreleased pangolin versions - this has to move
+	# together with services.pangolin.package, never on its own.
 	badgerSrc = pkgs.fetchFromGitHub {
 		owner = "fosrl";
 		repo  = "badger";
@@ -62,13 +38,67 @@ let
 		lib.nameValuePair "${proto}-${toString port}"
 			{ address = ":${toString port}/${proto}"; };
 in {
+	# The pangolin module ships in nixpkgs and reads pkgs.fosrl-gerbil directly,
+	# with no package option, so pinning the packages alone would still leave
+	# the module rolling. Take the module from the pinned revision too - it is
+	# the module that decides how badger is registered with traefik.
+	# The pinned module is imported as a value rather than as a path: while the
+	# pin and nixpkgs sit on the same revision the two paths are the same store
+	# path, and disabledModules would match the import as well and leave the
+	# host with no pangolin module at all.
+	disabledModules = [ "services/networking/pangolin.nix" ];
+	imports = [
+		(import "${inputs.nixpkgs-pangolin}/nixos/modules/services/networking/pangolin.nix")
+	];
+
+	# Everything pangolin builds from inputs.nixpkgs-pangolin. The overlay reads
+	# its system from `prev` rather than from `pkgs`, because a definition of
+	# nixpkgs.overlays that depends on pkgs makes evaluation recurse.
+	nixpkgs.overlays = [
+		(_: prev:
+			let
+				pinned = import inputs.nixpkgs-pangolin {
+					inherit (prev.stdenv.hostPlatform) system;
+				};
+			in {
+				inherit (pinned) fosrl-gerbil;
+
+				# The pinned revision still ships 1.21.0; 1.21.1 is the current
+				# stable release. Drop this override once nixpkgs catches up.
+				# npmDeps has to be built by hand: buildNpmPackage resolves it
+				# from the original arguments before mkDerivation runs, so
+				# overrideAttrs cannot reach npmDepsHash. postPatch is cleared
+				# because it rewrites APP_VERSION from the majorMinor.0 form
+				# upstream used to leave in consts.ts, and 1.21.1 already sets
+				# the real version there - its --replace-fail would abort the
+				# build.
+				fosrl-pangolin = pinned.fosrl-pangolin.overrideAttrs (finalAttrs: _: {
+					version = "1.21.1";
+					src = pinned.fetchFromGitHub {
+						owner = "fosrl";
+						repo  = "pangolin";
+						tag   = finalAttrs.version;
+						hash  = "sha256-zfXHev0bN3KVkoiSQ+2WQCgmcCtWi3dib6EiaYmthTo=";
+					};
+					npmDeps = pinned.fetchNpmDeps {
+						inherit (finalAttrs) src;
+						name = "pangolin-${finalAttrs.version}-npm-deps";
+						# Must equal npmDepsFetcherVersion in the package, or
+						# the npm config hook rejects the prefetched tree.
+						fetcherVersion = finalAttrs.npmDepsFetcherVersion;
+						hash = "sha256-9wPn2nSD9VxMyHywrG52WrChsrJ/ctnKGlMZZEymP6A=";
+					};
+					postPatch = "";
+				});
+			})
+	];
+
 	sops.templates."pangolin.env".content = ''
 		SERVER_SECRET=${config.sops.placeholder."pangolin-server-secret"}
 	'';
 
 	services.pangolin = {
 		enable = true;
-		package = pangolinPkg;
 		baseDomain = "yesbutmaybe.no";
 		dashboardDomain = "pangolin.yesbutmaybe.no";
 		# Must stay the email of the ACME account stored in
@@ -138,8 +168,14 @@ in {
 		# a failed download disables all plugins - every http router then 404s
 		# because the badger@http middleware no longer exists. Vendoring the
 		# source removes the network from the startup path.
-		experimental.plugins = lib.mkForce { };
-		experimental.localPlugins.badger.moduleName = "github.com/fosrl/badger";
+		#
+		# The whole experimental attrset is replaced rather than just
+		# experimental.plugins: an empty attrset still renders an empty
+		# [experimental.plugins] table, which traefik rejects outright with
+		# "plugins cannot be a standalone element". The key has to be absent.
+		experimental = lib.mkForce {
+			localPlugins.badger.moduleName = "github.com/fosrl/badger";
+		};
 
 		# Proxied targets with self-signed certs (https upstreams) need this.
 		serversTransport.insecureSkipVerify = true;

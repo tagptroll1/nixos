@@ -3,6 +3,15 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    # Pangolin, gerbil and the pangolin NixOS module all come from this pinned
+    # revision instead of the rolling one, so `nix flake update` cannot move
+    # them. Two reasons they must not drift unattended: pangolin migrates its
+    # sqlite db forward only (a bad bump cannot be rolled back by switching to
+    # the previous generation), and the module hardcodes the badger traefik
+    # plugin, which has to stay paired with the pangolin release. Bump this rev
+    # by hand after checking the pairing in the pangolin tag's
+    # config/traefik/traefik_config.yml.
+    nixpkgs-pangolin.url = "github:nixos/nixpkgs/2fcb964de67fcf60b43471c55d5d99e61a9ccb5a";
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
