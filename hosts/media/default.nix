@@ -26,12 +26,16 @@
 		# ./modules/cs2.nix  # disabled
 		./modules/factorio.nix
 		./modules/palworld.nix
+		./modules/zomboid.nix
 		./modules/mealie.nix
 		./modules/opencloud.nix
 		./modules/immich.nix
 		./modules/immich-public-proxy.nix
 		./modules/jellyfin.nix
 	];
+
+	myServices.palworld.enable = false;
+	myServices.zomboid.enable = true;
 
 	sops.age.keyFile = "/etc/age/host.key";
 	sops.secrets = {
@@ -79,6 +83,18 @@
 		"palworld/panel_pw" = {
 			sopsFile = ./secrets/palworldSecret.yaml;
 			key = "panel_pw";
+		};
+		"zomboid/server_pw" = {
+			sopsFile = ./secrets/zomboidSecret.yaml;
+			key = "server_pw";
+		};
+		"zomboid/admin_pw" = {
+			sopsFile = ./secrets/zomboidSecret.yaml;
+			key = "admin_pw";
+		};
+		"zomboid/rcon_pw" = {
+			sopsFile = ./secrets/zomboidSecret.yaml;
+			key = "rcon_pw";
 		};
 	};
 

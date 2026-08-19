@@ -41,6 +41,8 @@ let
 		27015 # CS2 → media
 		34197 # Factorio → media
 		8211  # Palworld → media
+		16261 # Zomboid handshake/game → media
+		16262 # Zomboid direct-connect → media
 	];
 	entryPoint = proto: port:
 		lib.nameValuePair "${proto}-${toString port}"
