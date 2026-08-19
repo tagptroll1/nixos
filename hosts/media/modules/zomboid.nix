@@ -205,6 +205,10 @@ in
 
         Restart = "always";
         RestartSec = 30;
+        # steamcmd validates the full 7 GB install on every start, which takes
+        # far longer than systemd's 90s default - and ExecStartPre counts
+        # against the start timeout.
+        TimeoutStartSec = "infinity";
         # The server saves the world on SIGTERM; give it room to finish.
         KillSignal = "SIGTERM";
         TimeoutStopSec = 180;
