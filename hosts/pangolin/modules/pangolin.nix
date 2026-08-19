@@ -155,10 +155,22 @@ in {
 	# symlink was silently never created. Doing it in preStart also removes an
 	# ordering race - tmpfiles-resetup and traefik have no dependency between
 	# them, and traefik reads the plugin manifest only at startup.
-	systemd.services.traefik.preStart = lib.mkAfter ''
-		install -d -m 0750 ${badgerLocalDir}
-		ln -sfn ${badgerSrc} ${badgerLocalDir}/badger
-	'';
+	# The "+" prefix runs this as root instead of as the traefik user. The
+	# directories under plugins-local/ were created root-owned and traefik
+	# cannot write into them; a preStart running as traefik fails there, and a
+	# failed ExecStartPre takes the whole service down rather than just
+	# disabling the plugin. Root only needs the parents to be traversable, so
+	# this works whoever created them. The link is removed rather than replaced
+	# with `ln -sfn`, which links *into* the destination when it is a real
+	# directory instead of replacing it.
+	systemd.services.traefik.serviceConfig.ExecStartPre = lib.mkAfter [
+		"+${pkgs.writeShellScript "traefik-badger-link" ''
+			set -eu
+			install -d -m 0755 ${badgerLocalDir}
+			rm -rf ${badgerLocalDir}/badger
+			ln -s ${badgerSrc} ${badgerLocalDir}/badger
+		''}"
+	];
 
 	# The traefik module only defines web/websecure; raw resources need their
 	# ports declared statically.
