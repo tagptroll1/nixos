@@ -118,6 +118,16 @@ in
         group = "games";
         mode = "2770";
       };
+      # Where the steamworks game server library looks for steamclient.so.
+      # Without it the server falls back to the copy in its install directory
+      # and only half initialises steam.
+      "${zomboidRoot}/.steam/sdk64".d = {
+        user = "games";
+        group = "games";
+        mode = "0750";
+      };
+      "${zomboidRoot}/.steam/sdk64/steamclient.so"."L+".argument =
+        "${zomboidServer}/linux64/steamclient.so";
     };
 
     # Join password + RCON password land in the ini, so the whole ini is rendered
@@ -194,10 +204,12 @@ in
       wants = [ "network-online.target" ];
       requires = [ "mnt-games.mount" ];
 
-      environment = {
-        HOME = zomboidRoot;
-        SteamAppId = appId;
-      };
+      # No SteamAppId here: the install ships steam_appid.txt holding 108600,
+      # the game's own id, and that is what the game server has to register
+      # with. The environment variable takes precedence over the file, so
+      # setting it to the dedicated server tool's id (appId, 380870) is what
+      # leaves steam half initialised.
+      environment.HOME = zomboidRoot;
 
       serviceConfig = {
         User = "games";
@@ -225,14 +237,12 @@ in
         # JVM takes user.home from the games user's passwd entry, /var/empty, so
         # without this the server writes its ini and saves there and exits.
         #
-        # -nosteam (the documented spelling of -Dzomboid.steam=0, which the
-        # shipped ProjectZomboid64.json otherwise sets to 1) puts both ports on
-        # RakNet. With steam on, 16261 is handled by steam networking, which
-        # never finishes initialising here — the server logs "Tried to access
-        # Steam interface SteamNetworkingUtils004 before SteamAPI_Init
-        # succeeded" and clients hang on "Getting Server Info". Players join by
-        # IP either way, since the server is not advertised.
-        ExecStart = "${pkgs.steam-run}/bin/steam-run ${zomboidServer}/start-server.sh -nosteam -cachedir=${zomboidData} -servername ${serverName} -adminusername admin -adminpassword \${ZOMBOID_ADMIN_PASSWORD}";
+        # Steam stays enabled, which is what lets an ordinary steam client join
+        # by IP with no launch options. Adding -nosteam here (the documented
+        # spelling of -Dzomboid.steam=0) moves everything onto RakNet instead,
+        # at the price of every client needing -nosteam in its own launch
+        # options - a non-steam client can only join a non-steam server.
+        ExecStart = "${pkgs.steam-run}/bin/steam-run ${zomboidServer}/start-server.sh -cachedir=${zomboidData} -servername ${serverName} -adminusername admin -adminpassword \${ZOMBOID_ADMIN_PASSWORD}";
 
         Restart = "always";
         RestartSec = 30;
