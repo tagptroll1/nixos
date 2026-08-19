@@ -29,6 +29,20 @@ let
 		};
 		postPatch = "";
 	});
+	# Badger auth middleware, vendored instead of downloaded. Version pairs
+	# with pangolin 1.20.x-1.21.x, per config/traefik/traefik_config.yml in
+	# the pangolin repo.
+	badgerSrc = pkgs.fetchFromGitHub {
+		owner = "fosrl";
+		repo  = "badger";
+		tag   = "v1.4.1";
+		hash  = "sha256-s0d3Rp7ZFJKPcVHRPYrjI/4W2nM311Hs52qdtH5imWw=";
+	};
+	traefikDataDir = "/var/lib/pangolin/config/traefik";
+	# Traefik resolves local plugins as ./plugins-local/src/<moduleName>
+	# relative to its working directory.
+	badgerLocalDir = "${traefikDataDir}/plugins-local/src/github.com/fosrl";
+
 	# Ports for the raw TCP/UDP resources in the Pangolin database (mail +
 	# game servers). Each one becomes a traefik entryPoint named tcp-N/udp-N
 	# (the names Pangolin's dynamic traefik config references) and a firewall
@@ -101,17 +115,31 @@ in {
 		allowedUDPPorts = rawUdpPorts;
 	};
 
+	# Badger source tree for experimental.localPlugins. The symlink is
+	# replaced on every activation, so a version bump above takes effect on
+	# the next traefik restart.
+	systemd.tmpfiles.rules = [
+		"d ${traefikDataDir}/plugins-local              0750 traefik fossorial - -"
+		"d ${traefikDataDir}/plugins-local/src          0750 traefik fossorial - -"
+		"d ${traefikDataDir}/plugins-local/src/github.com 0750 traefik fossorial - -"
+		"d ${badgerLocalDir}                            0750 traefik fossorial - -"
+		"L+ ${badgerLocalDir}/badger                    - - - - ${badgerSrc}"
+	];
+
 	# The traefik module only defines web/websecure; raw resources need their
 	# ports declared statically.
 	services.traefik.staticConfigOptions = {
 		entryPoints = lib.listToAttrs
 			(map (entryPoint "tcp") rawTcpPorts ++ map (entryPoint "udp") rawUdpPorts);
 
-		# Badger version upstream pairs with pangolin 1.20.x-1.21.x, per
-		# config/traefik/traefik_config.yml in the pangolin repo. The nixpkgs
-		# module default lags. A version traefik cannot fetch makes every http
-		# router 404, so this must track the running pangolin.
-		experimental.plugins.badger.version = lib.mkForce "v1.4.1";
+		# The pangolin module registers badger as a remote plugin, which makes
+		# traefik download it from plugins.traefik.io on every start. That
+		# fetch regularly exceeds traefik's client timeout from this VPS, and
+		# a failed download disables all plugins - every http router then 404s
+		# because the badger@http middleware no longer exists. Vendoring the
+		# source removes the network from the startup path.
+		experimental.plugins = lib.mkForce { };
+		experimental.localPlugins.badger.moduleName = "github.com/fosrl/badger";
 
 		# Proxied targets with self-signed certs (https upstreams) need this.
 		serversTransport.insecureSkipVerify = true;
