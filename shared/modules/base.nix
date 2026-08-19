@@ -13,6 +13,15 @@
 		auto-optimise-store = true;
 	};
 
+	# Old system generations are GC roots, so without this the store grows
+	# until a rebuild runs out of disk.
+	nix.gc = {
+		automatic = true;
+		dates = "weekly";
+		persistent = true;
+		options = "--delete-older-than 30d";
+	};
+
 	nixpkgs.config.allowUnfree = true;
 
 	system.stateVersion = "25.11";
