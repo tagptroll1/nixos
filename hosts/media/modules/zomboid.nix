@@ -19,8 +19,9 @@
 }:
 let
   # Everything lives on the games share (see storage.nix), same as cs2/factorio.
-  # HOME points at zomboidRoot so both steamcmd (~/.local/share/Steam) and the
-  # server (~/Zomboid/{Server,Saves,Logs,db}) stay inside it.
+  # HOME points at zomboidRoot so steamcmd keeps its own state
+  # (~/.local/share/Steam) inside it; the server is pointed at its data
+  # directory with -cachedir instead.
   zomboidRoot = "/mnt/games/zomboid";
   zomboidServer = "${zomboidRoot}/server"; # steamcmd force_install_dir
   zomboidData = "${zomboidRoot}/Zomboid"; # server writes config/saves/db here
@@ -220,7 +221,10 @@ in
 
         # The shipped launcher and its bundled JRE are plain FHS binaries — steam-run
         # supplies the loader and libraries they expect.
-        ExecStart = "${pkgs.steam-run}/bin/steam-run ${zomboidServer}/start-server.sh -servername ${serverName} -adminusername admin -adminpassword \${ZOMBOID_ADMIN_PASSWORD}";
+        # -cachedir is what points the server at zomboidData. HOME does not: the
+        # JVM takes user.home from the games user's passwd entry, /var/empty, so
+        # without this the server writes its ini and saves there and exits.
+        ExecStart = "${pkgs.steam-run}/bin/steam-run ${zomboidServer}/start-server.sh -cachedir=${zomboidData} -servername ${serverName} -adminusername admin -adminpassword \${ZOMBOID_ADMIN_PASSWORD}";
 
         Restart = "always";
         RestartSec = 30;
