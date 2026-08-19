@@ -99,6 +99,24 @@ in
         group = "games";
         mode = "2770";
       };
+      # The server creates files inside these but never the directories
+      # themselves: a missing db/ makes it log "failed to create user database"
+      # and shut down again immediately.
+      "${zomboidData}/db".d = {
+        user = "games";
+        group = "games";
+        mode = "2770";
+      };
+      "${zomboidData}/Saves".d = {
+        user = "games";
+        group = "games";
+        mode = "2770";
+      };
+      "${zomboidData}/Logs".d = {
+        user = "games";
+        group = "games";
+        mode = "2770";
+      };
     };
 
     # Join password + RCON password land in the ini, so the whole ini is rendered
@@ -186,11 +204,12 @@ in
         WorkingDirectory = zomboidServer;
         EnvironmentFile = config.sops.templates."zomboid.env".path;
 
+        # Nothing to start before the game files exist. A failing ExecCondition
+        # leaves the unit inactive instead of triggering Restart=, so an empty
+        # install waits for zomboid-update rather than looping every 30s.
+        ExecCondition = "${pkgs.coreutils}/bin/test -x ${zomboidServer}/start-server.sh";
+
         ExecStartPre = [
-          # Public branch — build 42.20.x is the stable release since July 2026, so
-          # no -beta flag. Runs on every start, which also self-heals a half
-          # downloaded install.
-          "${pkgs.steamcmd}/bin/steamcmd +force_install_dir ${zomboidServer} +login anonymous +app_update ${appId} validate +quit"
           # Nix owns the config: both files are overwritten on every start, so
           # changes made in-game through the admin panel do not survive a restart.
           "${pkgs.coreutils}/bin/install -m 0640 ${
@@ -205,13 +224,53 @@ in
 
         Restart = "always";
         RestartSec = 30;
-        # steamcmd validates the full 7 GB install on every start, which takes
-        # far longer than systemd's 90s default - and ExecStartPre counts
-        # against the start timeout.
-        TimeoutStartSec = "infinity";
         # The server saves the world on SIGTERM; give it room to finish.
         KillSignal = "SIGTERM";
         TimeoutStopSec = 180;
+      };
+    };
+
+    # Downloading 7 GB from Steam is not part of starting the game: as an
+    # ExecStartPre it makes every `systemctl start` and every nixos-rebuild
+    # block until steam is done. Kept in its own unit, the game server starts in
+    # seconds and updates are a job that runs, and can be watched, on its own.
+    systemd.services.zomboid-update = {
+      description = "Install or update the Project Zomboid dedicated server from Steam";
+      after = [
+        "network-online.target"
+        "mnt-games.mount"
+      ];
+      wants = [ "network-online.target" ];
+      requires = [ "mnt-games.mount" ];
+
+      environment = {
+        HOME = zomboidRoot;
+        SteamAppId = appId;
+      };
+
+      serviceConfig = {
+        Type = "oneshot";
+        User = "games";
+        Group = "games";
+        WorkingDirectory = zomboidServer;
+        # Public branch — build 42.20.x is the stable release since July 2026,
+        # so no -beta flag. `validate` is left off: it rehashes all 7 GB, which
+        # is only worth it to repair a broken install, by hand:
+        #   steamcmd +force_install_dir <dir> +login anonymous \
+        #     +app_update 380870 validate +quit
+        ExecStart = "${pkgs.steamcmd}/bin/steamcmd +force_install_dir ${zomboidServer} +login anonymous +app_update ${appId} +quit";
+        # The first run downloads the whole game; steam sets no pace for it.
+        TimeoutStartSec = "infinity";
+      };
+    };
+
+    systemd.timers.zomboid-update = {
+      description = "Daily Project Zomboid update check";
+      wantedBy = [ "timers.target" ];
+      timerConfig = {
+        # Ahead of the 05:00 restart, which is what puts a new build live.
+        OnCalendar = "04:45";
+        Persistent = true;
       };
     };
 
