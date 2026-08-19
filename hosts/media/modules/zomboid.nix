@@ -224,7 +224,15 @@ in
         # -cachedir is what points the server at zomboidData. HOME does not: the
         # JVM takes user.home from the games user's passwd entry, /var/empty, so
         # without this the server writes its ini and saves there and exits.
-        ExecStart = "${pkgs.steam-run}/bin/steam-run ${zomboidServer}/start-server.sh -cachedir=${zomboidData} -servername ${serverName} -adminusername admin -adminpassword \${ZOMBOID_ADMIN_PASSWORD}";
+        #
+        # -nosteam (the documented spelling of -Dzomboid.steam=0, which the
+        # shipped ProjectZomboid64.json otherwise sets to 1) puts both ports on
+        # RakNet. With steam on, 16261 is handled by steam networking, which
+        # never finishes initialising here — the server logs "Tried to access
+        # Steam interface SteamNetworkingUtils004 before SteamAPI_Init
+        # succeeded" and clients hang on "Getting Server Info". Players join by
+        # IP either way, since the server is not advertised.
+        ExecStart = "${pkgs.steam-run}/bin/steam-run ${zomboidServer}/start-server.sh -nosteam -cachedir=${zomboidData} -servername ${serverName} -adminusername admin -adminpassword \${ZOMBOID_ADMIN_PASSWORD}";
 
         Restart = "always";
         RestartSec = 30;
