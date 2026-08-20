@@ -36,6 +36,11 @@ let
 
   rconPort = 27015;
 
+  # JVM max heap. The launcher reads it from ProjectZomboid64.json, which is a
+  # shipped file steam restores on every app_update, so it is re-patched on each
+  # start instead of edited by hand. Stock is 8g; the box has 23 GB total.
+  heapSize = "12g";
+
   # Sandbox rules. Anything omitted keeps its vanilla default, so this file only
   # lists what we deviate on plus the knobs worth knowing about.
   # VERSION = 5 is the build 42 schema marker.
@@ -178,9 +183,34 @@ in
         Map=Muldraugh, KY
 
         # Workshop mods: numeric ids in WorkshopItems, mod ids in Mods, both
-        # semicolon separated, dependencies first.
-        WorkshopItems=
-        Mods=
+        # semicolon separated, dependencies first. The server downloads
+        # WorkshopItems from steam itself on start, so the first start after a
+        # change takes a few minutes longer.
+        #
+        # NeatUI_Framework is a library the three Neat/Clean UI mods require,
+        # and it has to load before them. Neat Building is the full variant
+        # (UI + buildables + railings); the split SES variants only matter
+        # alongside Stairs East & South, which is not installed.
+        #
+        #   3508537032  NeatUI_Framework      NeatUI Framework
+        #   3437629766  CleanUI               CleanUI
+        #   3536052310  Neat_Building         Neat Building
+        #   3502080466  Neat_Crafting         Neat Crafting
+        #   3461263912  CleanHotBar           Clean Hot Bar
+        #   3774826484  JumboTreeIndoorFix    Jumbo Tree Indoor Fix
+        #   3577903007  VanillaFoodsExpanded  Vanilla Foods Expanded
+        #   3689524052  LTWB42                Legendary Tactical Weapons
+        #   3436537035  UsefulBarrelsMP       Useful Barrels
+        #   3739168410  Obvious_Skill_Tapes   Obvious Skill Tapes
+        #   3387539308  AutoMechanics         Auto Mechanics
+        #   3668370011  LKB42                 Legendary Katana Wakizashi
+        #   3538353228  LBB42                 Legendary Backpacks
+        #   3552050880  LFB42                 Legendary Fanny Pack
+        #   3558839307  LDB42                 Legendary DuffelBag
+        #   3560352772  LSB42                 Legendary Satchel
+        #   3549294472  LCB42                 Legendary Cap
+        WorkshopItems=3508537032;3437629766;3536052310;3502080466;3461263912;3774826484;3577903007;3689524052;3436537035;3739168410;3387539308;3668370011;3538353228;3552050880;3558839307;3560352772;3549294472
+        Mods=NeatUI_Framework;CleanUI;Neat_Building;Neat_Crafting;CleanHotBar;JumboTreeIndoorFix;VanillaFoodsExpanded;LTWB42;UsefulBarrelsMP;Obvious_Skill_Tapes;AutoMechanics;LKB42;LBB42;LFB42;LDB42;LSB42;LCB42
       '';
     };
 
@@ -229,6 +259,9 @@ in
             config.sops.templates."zomboid.ini".path
           } ${zomboidData}/Server/${serverName}.ini"
           "${pkgs.coreutils}/bin/install -m 0640 ${sandboxVars} ${zomboidData}/Server/${serverName}_SandboxVars.lua"
+          # Patch in place rather than rendering the whole file: the rest of
+          # vmArgs is upstream's business and changes between builds.
+          "${pkgs.gnused}/bin/sed -i -E s/-Xmx[0-9]+[mMgG]/-Xmx${heapSize}/ ${zomboidServer}/ProjectZomboid64.json"
         ];
 
         # The shipped launcher and its bundled JRE are plain FHS binaries — steam-run
