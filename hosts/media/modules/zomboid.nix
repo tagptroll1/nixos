@@ -49,8 +49,8 @@ let
             VERSION = 5,
 
             -- In-game minutes spent per page of a book. 1.0 is vanilla; 0.5 reads
-            -- twice as fast, 0.25 four times.
-            MinutesPerPage = 0.25,
+            -- twice as fast, 0.1 ten times.
+            MinutesPerPage = 0.1,
 
             -- Skill gain rate. 1.0 vanilla.
             XpMultiplier = 1.0,
