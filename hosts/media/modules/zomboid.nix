@@ -181,8 +181,8 @@ in
                 SleepNeeded=false
         				TrashDeleteAll=true
         				ChatMessageSlowModeTime=1
-        				VoiceMinDistance=200.0
-        				VoiceMaxDistance=10000.0
+        				VoiceMinDistance=100.0
+        				VoiceMaxDistance=1000.0
 
                 # 0 = save only on the game's own schedule/shutdown.
                 SaveWorldEveryMinutes=10
