@@ -69,7 +69,7 @@ let
   restartScript = pkgs.writeShellScript "zomboid-restart" ''
     set -eu
     export PATH=${pkgs.coreutils}/bin:$PATH
-    rcon() { ${pkgs.rcon-cli}/bin/rcon-cli -a 127.0.0.1:${toString rconPort} -p "$ZOMBOID_RCON_PASSWORD" "$@"; }
+    rcon() { ${pkgs.rcon-cli}/bin/rcon-cli --host 127.0.0.1 --port ${toString rconPort} --password "$ZOMBOID_RCON_PASSWORD" "$@"; }
 
     rcon 'servermsg "Server restarting in 5 minutes"'
     sleep 240
