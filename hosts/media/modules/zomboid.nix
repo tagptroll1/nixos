@@ -82,6 +82,71 @@ let
     sleep 5
     rcon quit
   '';
+
+  # Workshop files are only fetched while the server boots, so a mod that
+  # updates mid-session leaves the server on the old version while steam has
+  # already handed clients the new one: joining then fails on a mod mismatch
+  # until the next restart. Cycling an empty server as soon as an update lands
+  # keeps that window to minutes instead of a day, and never interrupts play
+  # because it refuses to run with anyone connected.
+  modCheckScript = pkgs.writeShellScript "zomboid-mod-check" ''
+    set -eu
+    export PATH=${
+      lib.makeBinPath [
+        pkgs.coreutils
+        pkgs.curl
+        pkgs.jq
+        pkgs.gnused
+        pkgs.gnugrep
+        config.systemd.package
+      ]
+    }
+
+    rcon() { ${pkgs.rcon-cli}/bin/rcon-cli --host 127.0.0.1 --port ${toString rconPort} --password "$ZOMBOID_RCON_PASSWORD" "$@"; }
+
+    # Everything below compares against the moment the server came up, because
+    # that is when it last pulled workshop files.
+    started=$(date -d "$(systemctl show -P ActiveEnterTimestamp zomboid.service)" +%s)
+    now=$(date +%s)
+    # Loading the world takes about six minutes, during which RCON is not
+    # listening yet and any update steam reports was picked up by that boot.
+    [ $((now - started)) -ge 900 ] || exit 0
+
+    # "Players connected (0):". Anything else means the command changed shape,
+    # and guessing at it risks cycling a server with people on it.
+    players=$(rcon players | sed -E -n '1s/.*\(([0-9]+)\).*/\1/p')
+    if [ -z "$players" ]; then
+      echo "could not read a player count out of 'rcon players'" >&2
+      exit 1
+    fi
+    [ "$players" -eq 0 ] || exit 0
+
+    # The ini the running server loaded is the mod list, so there is no second
+    # copy of the ids to keep in sync.
+    ids=$(sed -E -n 's/^WorkshopItems=//p' ${zomboidData}/Server/${serverName}.ini | tr ';' '\n' | grep -E '^[0-9]+$')
+
+    args=()
+    count=0
+    while read -r id; do
+      args+=(--data-urlencode "publishedfileids[$count]=$id")
+      count=$((count + 1))
+    done <<< "$ids"
+
+    # Public read-only endpoint, no api key: time_updated is when the item was
+    # last published.
+    stale=$(curl -sS --fail --max-time 30 \
+      --data-urlencode "itemcount=$count" "''${args[@]}" \
+      https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/ \
+      | jq -r --argjson since "$started" \
+        '.response.publishedfiledetails[] | select(.result == 1 and .time_updated > $since) | .publishedfileid')
+
+    [ -n "$stale" ] || exit 0
+
+    echo "workshop items published since the server started: $(echo $stale | tr '\n' ' ')"
+    rcon save
+    sleep 5
+    rcon quit
+  '';
 in
 {
   options.myServices.zomboid.enable = lib.mkEnableOption "the Project Zomboid dedicated server";
@@ -364,6 +429,34 @@ in
       wantedBy = [ "timers.target" ];
       timerConfig = {
         OnCalendar = "05:00";
+        Persistent = false;
+      };
+    };
+
+    systemd.services.zomboid-mod-check = {
+      description = "Cycle the Project Zomboid server when workshop mods have updated and nobody is online";
+      serviceConfig = {
+        Type = "oneshot";
+        User = "games";
+        Group = "games";
+        EnvironmentFile = config.sops.templates."zomboid.env".path;
+        ExecCondition = [
+          # Nothing to check while the server is down.
+          "${config.systemd.package}/bin/systemctl --quiet is-active zomboid.service"
+          # The nightly restart is already cycling the server; quitting out from
+          # under its warning countdown just makes its own RCON calls fail.
+          "${pkgs.bash}/bin/bash -c '! ${config.systemd.package}/bin/systemctl --quiet is-active zomboid-restart.service'"
+        ];
+        ExecStart = modCheckScript;
+        TimeoutStartSec = 120;
+      };
+    };
+
+    systemd.timers.zomboid-mod-check = {
+      description = "Quarter-hourly Project Zomboid workshop update check";
+      wantedBy = [ "timers.target" ];
+      timerConfig = {
+        OnCalendar = "*:00/15";
         Persistent = false;
       };
     };
