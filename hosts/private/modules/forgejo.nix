@@ -23,6 +23,10 @@
 				SSH_LISTEN_PORT  = 2222;
 				SSH_PORT         = 2222;
 				SSH_DOMAIN       = "git.ybmn.no";
+
+				# Defaults to RUN_USER, which is `forgejo` here — every client
+				# and clone URL expects the conventional `git@`.
+				BUILTIN_SSH_SERVER_USER = "git";
 			};
 
 			# Served over https only.
