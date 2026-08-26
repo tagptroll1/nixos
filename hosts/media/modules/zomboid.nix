@@ -36,6 +36,17 @@ let
 
   rconPort = 27015;
 
+  # Public branch — build 42.20.x is the stable release since July 2026, so no
+  # -beta flag. `validate` is left off: it rehashes all 7 GB, which is only
+  # worth it to repair a broken install, by hand:
+  #   steamcmd +force_install_dir <dir> +login anonymous \
+  #     +app_update 380870 validate +quit
+  updateCmd = "${pkgs.steamcmd}/bin/steamcmd +force_install_dir ${zomboidServer} +login anonymous +app_update ${appId} +quit";
+
+  # Steam writes the installed build id here on every app_update, so it is the
+  # only record of which build the files on disk are.
+  appManifest = "${zomboidServer}/steamapps/appmanifest_${appId}.acf";
+
   # JVM max heap. The launcher reads it from ProjectZomboid64.json, which is a
   # shipped file steam restores on every app_update, so it is re-patched on each
   # start instead of edited by hand. Stock is 8g; the box has 23 GB total.
@@ -83,13 +94,13 @@ let
     rcon quit
   '';
 
-  # Workshop files are only fetched while the server boots, so a mod that
-  # updates mid-session leaves the server on the old version while steam has
-  # already handed clients the new one: joining then fails on a mod mismatch
-  # until the next restart. Cycling an empty server as soon as an update lands
-  # keeps that window to minutes instead of a day, and never interrupts play
-  # because it refuses to run with anyone connected.
-  modCheckScript = pkgs.writeShellScript "zomboid-mod-check" ''
+  # Both the game and its workshop files are only fetched while the server
+  # boots, so anything published mid-session leaves the server behind while
+  # steam has already handed clients the new version: joining then fails on a
+  # mod or build mismatch until the next restart. Updating and cycling an empty
+  # server as soon as one lands keeps that window to minutes instead of a day,
+  # and never interrupts play because it refuses to run with anyone connected.
+  updateCheckScript = pkgs.writeShellScript "zomboid-update-check" ''
     set -eu
     export PATH=${
       lib.makeBinPath [
@@ -103,6 +114,7 @@ let
     }
 
     rcon() { ${pkgs.rcon-cli}/bin/rcon-cli --host 127.0.0.1 --port ${toString rconPort} --password "$ZOMBOID_RCON_PASSWORD" "$@"; }
+    installedBuild() { sed -E -n 's/^[[:space:]]*"buildid"[[:space:]]+"([0-9]+)".*/\1/p' ${appManifest}; }
 
     # Everything below compares against the moment the server came up, because
     # that is when it last pulled workshop files.
@@ -120,6 +132,20 @@ let
       exit 1
     fi
     [ "$players" -eq 0 ] || exit 0
+
+    reason=""
+
+    # steamcmd exits in seconds once the install is current, so running it every
+    # quarter hour and diffing the build id it records costs less than parsing
+    # app_info_print's vdf to ask what the published build is. It writes over a
+    # running server's files, which is why it only happens with nobody on and
+    # the server is cycled immediately afterwards.
+    before=$(installedBuild)
+    ${updateCmd}
+    after=$(installedBuild)
+    if [ -n "$before" ] && [ "$before" != "$after" ]; then
+      reason="game build $before -> $after"
+    fi
 
     # The ini the running server loaded is the mod list, so there is no second
     # copy of the ids to keep in sync.
@@ -140,9 +166,16 @@ let
       | jq -r --argjson since "$started" \
         '.response.publishedfiledetails[] | select(.result == 1 and .time_updated > $since) | .publishedfileid')
 
-    [ -n "$stale" ] || exit 0
+    if [ -n "$stale" ]; then
+      reason="''${reason:+$reason; }workshop items published since the server started: $(echo $stale | tr '\n' ' ')"
+    fi
 
-    echo "workshop items published since the server started: $(echo $stale | tr '\n' ' ')"
+    [ -n "$reason" ] || exit 0
+
+    echo "cycling the server: $reason"
+    # quit saves the world before shutting down; save first anyway so a hang
+    # during shutdown still loses nothing. Restart=always brings it back on the
+    # files steamcmd just laid down.
     rcon save
     sleep 5
     rcon quit
@@ -389,12 +422,7 @@ in
         User = "games";
         Group = "games";
         WorkingDirectory = zomboidServer;
-        # Public branch — build 42.20.x is the stable release since July 2026,
-        # so no -beta flag. `validate` is left off: it rehashes all 7 GB, which
-        # is only worth it to repair a broken install, by hand:
-        #   steamcmd +force_install_dir <dir> +login anonymous \
-        #     +app_update 380870 validate +quit
-        ExecStart = "${pkgs.steamcmd}/bin/steamcmd +force_install_dir ${zomboidServer} +login anonymous +app_update ${appId} +quit";
+        ExecStart = updateCmd;
         # The first run downloads the whole game; steam sets no pace for it.
         TimeoutStartSec = "infinity";
       };
@@ -433,12 +461,19 @@ in
       };
     };
 
-    systemd.services.zomboid-mod-check = {
-      description = "Cycle the Project Zomboid server when workshop mods have updated and nobody is online";
+    systemd.services.zomboid-update-check = {
+      description = "Cycle the Project Zomboid server when the game or its workshop mods have updated and nobody is online";
+
+      environment = {
+        HOME = zomboidRoot;
+        SteamAppId = appId;
+      };
+
       serviceConfig = {
         Type = "oneshot";
         User = "games";
         Group = "games";
+        WorkingDirectory = zomboidServer;
         EnvironmentFile = config.sops.templates."zomboid.env".path;
         ExecCondition = [
           # Nothing to check while the server is down.
@@ -446,14 +481,20 @@ in
           # The nightly restart is already cycling the server; quitting out from
           # under its warning countdown just makes its own RCON calls fail.
           "${pkgs.bash}/bin/bash -c '! ${config.systemd.package}/bin/systemctl --quiet is-active zomboid-restart.service'"
+          # Two steamcmd runs against one force_install_dir fight over the same
+          # files, so stay out of the daily update's way.
+          "${pkgs.bash}/bin/bash -c '! ${config.systemd.package}/bin/systemctl --quiet is-active zomboid-update.service'"
         ];
-        ExecStart = modCheckScript;
-        TimeoutStartSec = 120;
+        ExecStart = updateCheckScript;
+        # A build that lands here is downloaded before the server is cycled, and
+        # a timeout would kill steamcmd mid-write and leave a half-swapped
+        # install running. Steam sets no pace for the download either.
+        TimeoutStartSec = "infinity";
       };
     };
 
-    systemd.timers.zomboid-mod-check = {
-      description = "Quarter-hourly Project Zomboid workshop update check";
+    systemd.timers.zomboid-update-check = {
+      description = "Quarter-hourly Project Zomboid game and workshop update check";
       wantedBy = [ "timers.target" ];
       timerConfig = {
         OnCalendar = "*:00/15";

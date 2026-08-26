@@ -1,4 +1,12 @@
-{ modulesPath, config, ... }: {
+{ modulesPath, config, lib, ... }:
+
+let
+	# sletteposten.no is not in use. WordPress + MySQL + PHP-FPM is a large attack
+	# surface to keep exposed for a site nobody visits, so the module is left out
+	# entirely - flip to true to bring the site back.
+	slettepostenEnabled = false;
+in
+{
 	imports = [
 		(modulesPath + "/profiles/qemu-guest.nix")
 		./hardware-configuration.nix
@@ -22,12 +30,11 @@
 		./modules/mailserver.nix
 		./modules/roundcube.nix
 		./modules/roundcube-ybmn.nix
-		./modules/wordpress.nix
 		./modules/static-sites.nix
 		./modules/peterssoncoffee.nix
 		./modules/byggogbedrag.nix
 		./modules/exporters.nix
-	];
+	] ++ lib.optional slettepostenEnabled ./modules/wordpress.nix;
 
 	sops.age.keyFile = "/etc/age/host.key";
 	sops.defaultSopsFile = ./secrets/secrets.yaml;
