@@ -21,7 +21,8 @@ in {
     useDHCP = false;
     firewall = {
       enable = true;
-      allowedTCPPorts = [ 80 443 8080 ];
+      # 2222 is Forgejo's built-in ssh server, for git clone/push over ssh.
+      allowedTCPPorts = [ 80 443 8080 2222 ];
     };
     interfaces.${hostConfig.interface}.ipv4.addresses = [{
       address = hostConfig.ip;
@@ -79,6 +80,10 @@ in {
 
           "z2m.ybmn.no".extraConfig      = lanOnly "${hostConfig.ip}:8124";
           "www.z2m.ybmn.no".extraConfig  = "redir https://z2m.ybmn.no{uri} permanent";
+
+          # Web UI only — git-over-ssh goes straight to port 2222, not via Caddy.
+          "git.ybmn.no".extraConfig      = lanOnly "127.0.0.1:3000";
+          "www.git.ybmn.no".extraConfig  = "redir https://git.ybmn.no{uri} permanent";
 
           "change.ybmn.no".extraConfig    = lanOnly "127.0.0.1:5000";
           "www.change.ybmn.no".extraConfig = "redir https://change.ybmn.no{uri} permanent";

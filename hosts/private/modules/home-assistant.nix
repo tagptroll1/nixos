@@ -16,7 +16,6 @@
 
   services.home-assistant = {
     enable = true;
-    openFirewall = false;
 
     # Optional C-accelerated compression libs — silences the
     # "zlib_ng and isal are not available" startup warning.
