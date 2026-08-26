@@ -22,9 +22,7 @@
 		./modules/zigbee2mqtt.nix
 		./modules/forgejo.nix
 		./modules/restic.nix
-		# Needs a runner registration token, which only exists once Forgejo has
-		# run. Enable together with the forgejo/runner_token secret below.
-		# ./modules/forgejo-runner.nix
+		./modules/forgejo-runner.nix
 	];
 	# set with e2label / mkfs.ext4 -L vmdata
 	fileSystems."/mnt/data" = {
@@ -59,10 +57,9 @@
 			key = "ssh_key";
 			mode = "0400";
 		};
-		# Uncomment together with ./modules/forgejo-runner.nix above.
-		# "forgejo/runner_token" = {
-		# 	sopsFile = ./secrets/forgejoSecret.yaml;
-		# 	key = "runner_token";
-		# };
+		"forgejo/runner_token" = {
+			sopsFile = ./secrets/forgejoSecret.yaml;
+			key = "runner_token";
+		};
 	};
 }
