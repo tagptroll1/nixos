@@ -82,8 +82,22 @@ in {
           "www.z2m.ybmn.no".extraConfig  = "redir https://z2m.ybmn.no{uri} permanent";
 
           # Web UI only — git-over-ssh goes straight to port 2222, not via Caddy.
-          "git.ybmn.no".extraConfig      = lanOnly "127.0.0.1:3000";
-          "www.git.ybmn.no".extraConfig  = "redir https://git.ybmn.no{uri} permanent";
+          # No www alias: nobody types www.git, and it doubles the certificates
+          # to obtain. Domeneshop spreads records across ns1/ns2/ns3.hyp.net
+          # slower than Caddy's default zero delay, so Let's Encrypt's secondary
+          # validation read a stale challenge TXT and failed. Wait for the record
+          # to settle before asking for validation.
+          "git.ybmn.no".extraConfig = ''
+            ${lanOnly "127.0.0.1:3000"}
+            tls {
+              dns domeneshop {
+                token  {env.DOMENESHOP_API_TOKEN}
+                secret {env.DOMENESHOP_API_SECRET}
+              }
+              propagation_delay   2m
+              propagation_timeout 5m
+            }
+          '';
 
           "change.ybmn.no".extraConfig    = lanOnly "127.0.0.1:5000";
           "www.change.ybmn.no".extraConfig = "redir https://change.ybmn.no{uri} permanent";
