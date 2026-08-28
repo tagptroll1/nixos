@@ -14,6 +14,7 @@
 		./modules/users.nix
 		./modules/packages.nix
 		./modules/podman.nix
+		./modules/apps.nix
 		./modules/uptime-kuma.nix
 		./modules/filebrowser.nix
 		./modules/changedetection.nix
@@ -23,6 +24,7 @@
 		./modules/forgejo.nix
 		./modules/restic.nix
 		./modules/forgejo-runner.nix
+		./modules/financio.nix
 	];
 	# set with e2label / mkfs.ext4 -L vmdata
 	fileSystems."/mnt/data" = {
@@ -56,6 +58,13 @@
 			sopsFile = ./secrets/resticSecret.yaml;
 			key = "ssh_key";
 			mode = "0400";
+		};
+		# A dotenv blob: NORDIGEN_CLIENT_ID, NORDIGEN_CLIENT_KEY and optionally
+		# BANK_ACCOUNTS. Owned by financio so the units can read it.
+		"financio/env" = {
+			sopsFile = ./secrets/financioSecret.yaml;
+			key = "env";
+			owner = "financio";
 		};
 		"forgejo/runner_token" = {
 			sopsFile = ./secrets/forgejoSecret.yaml;

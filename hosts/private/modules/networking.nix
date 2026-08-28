@@ -1,16 +1,10 @@
 { config, pkgs, hostConfig, ... }:
 let
   inherit (pkgs) it-tools;
-  # Only serve to LAN + tailnet — blocks access from public VM, internet pivots, etc.
-  # Even if MikroTik firewall is misconfigured, Caddy won't serve these externally.
-  # Tailnet traffic arrives via a subnet router on the Server subnet (10.0.0.0/24).
-  lanOnly = upstream: ''
-    @lan remote_ip 192.168.0.0/24 192.168.54.0/24 10.0.0.0/24
-    handle @lan {
-      reverse_proxy ${upstream}
-    }
-    respond "Access denied" 403
-  '';
+  # The LAN allowlist and the domeneshop tls block moved to lib/caddy.nix so the
+  # generated app vhosts in modules/apps.nix use the same ones. Changing the
+  # allowlist there changes it for both.
+  inherit (import ../../../lib/caddy.nix) lanOnly;
   # Network hierarchy: VMs (private/public) must NOT reach 10.0.0.x (Server subnet).
   # Grafana (10.0.0.5) and Proxmox (10.0.0.69) are accessed directly from LAN —
   # not proxied through Caddy here.
@@ -89,6 +83,26 @@ in {
           # to settle before asking for validation.
           "git.ybmn.no".extraConfig = ''
             ${lanOnly "127.0.0.1:3000"}
+            tls {
+              dns domeneshop {
+                token  {env.DOMENESHOP_API_TOKEN}
+                secret {env.DOMENESHOP_API_SECRET}
+              }
+              propagation_delay   2m
+              propagation_timeout 5m
+            }
+          '';
+
+
+          # The ledger. LAN + tailnet only, and that is the whole of its access
+          # control: no route in financio authenticates anything.
+          #
+          # New name, so first issuance hits the same slow domeneshop
+          # propagation git.ybmn.no did - wait for the TXT record to settle
+          # before asking for validation. No www alias, for the reason above it:
+          # nobody types www.bank, and it doubles the certificates.
+          "bank.ybmn.no".extraConfig = ''
+            ${lanOnly "127.0.0.1:8086"}
             tls {
               dns domeneshop {
                 token  {env.DOMENESHOP_API_TOKEN}

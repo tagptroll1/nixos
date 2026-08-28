@@ -29,6 +29,22 @@ let
 		};
 	};
 in {
+	# A static user, not DynamicUser. Two reasons, both from the deploy path in
+	# financio.nix: a dynamic uid cannot own /var/lib/financio-releases, and
+	# DynamicUser puts the runner's own state under /var/lib/private, which is
+	# 0700 root and therefore invisible to the financio service.
+	#
+	# Migration, once: the existing registration lives in
+	# /var/lib/private/forgejo-runner. After the first switch, chown it to this
+	# user or the runner comes up unregistered:
+	#   sudo chown -R forgejo-runner:forgejo-runner /var/lib/private/forgejo-runner
+	users.users.forgejo-runner = {
+		isSystemUser = true;
+		group        = "forgejo-runner";
+		home         = "/var/lib/forgejo-runner";
+	};
+	users.groups.forgejo-runner = {};
+
 	systemd.services.forgejo-runner = {
 		description = "Forgejo Actions runner";
 		after = [ "network-online.target" "forgejo.service" ];
@@ -47,10 +63,16 @@ in {
 			nodejs
 			wget
 			gnutar
+			# cgo: mattn/go-sqlite3 compiles the amalgamation on every build.
+			gcc
 			gzip
 			openssh
 			nix
 			go
+			# The deploy verification step polls /api/health and reads the sha
+			# out of it, then falls back to systemctl for the failure message.
+			jq
+			systemd
 			pnpm
 		];
 
@@ -58,7 +80,8 @@ in {
 			ExecStart = "${pkgs.forgejo-runner}/bin/forgejo-runner daemon --config ${configFile}";
 			WorkingDirectory = "/var/lib/forgejo-runner";
 			StateDirectory = "forgejo-runner";
-			DynamicUser = true;
+			User  = "forgejo-runner";
+			Group = "forgejo-runner";
 			LoadCredential = [ "token:${config.sops.secrets."forgejo/runner_token".path}" ];
 			Restart = "on-failure";
 			RestartSec = 2;

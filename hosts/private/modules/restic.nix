@@ -11,6 +11,15 @@ let
 	# Consistent copy of the sqlite db, taken by `sqlite3 .backup` right before
 	# each run. The live db is excluded below.
 	dbSnapshot = "/mnt/data/backup/forgejo-db.sqlite";
+
+	# The ledger holds every transaction ever synced, including a 12-month hole
+	# the bank will never return again. There is no other copy.
+	financioDir = "/var/lib/financio";
+
+	# Same treatment as forgejo's db: a consistent copy taken by sqlite3
+	# .backup right before each run, with the live files excluded. Copying a WAL
+	# database file by file gives a silently stale or corrupt ledger.
+	financioSnapshot = "/mnt/data/backup/financio.sqlite";
 in {
 	systemd.tmpfiles.rules = [
 		"d /mnt/data/backup 0700 root root - -"
@@ -33,6 +42,12 @@ in {
 		paths = [
 			forgejoDir
 			dbSnapshot
+
+			# .db-backups/ rides along on purpose: those are the pre-import undo
+			# points, and a bad import discovered after the nightly run is exactly
+			# when the off-site copy of them matters.
+			financioDir
+			financioSnapshot
 		];
 
 		exclude = [
@@ -42,10 +57,22 @@ in {
 			"${forgejoDir}/data/forgejo.db-shm"
 			"${forgejoDir}/log"
 			"${forgejoDir}/data/tmp"
+
+			# Live files - covered by financioSnapshot; reading them mid-write
+			# risks a torn copy.
+			"${financioDir}/database.db"
+			"${financioDir}/database.db-wal"
+			"${financioDir}/database.db-shm"
 		];
 
 		backupPrepareCommand = ''
 			${pkgs.sqlite}/bin/sqlite3 ${forgejoDir}/data/forgejo.db ".backup '${dbSnapshot}'"
+
+			# The ledger may not exist yet on a host that has not deployed
+			# financio, and a missing one must not fail forgejo's backup.
+			if [ -f ${financioDir}/database.db ]; then
+				${pkgs.sqlite}/bin/sqlite3 ${financioDir}/database.db ".backup '${financioSnapshot}'"
+			fi
 		'';
 
 		timerConfig = {
