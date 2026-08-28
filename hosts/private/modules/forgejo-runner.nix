@@ -34,10 +34,13 @@ in {
 	# DynamicUser puts the runner's own state under /var/lib/private, which is
 	# 0700 root and therefore invisible to the financio service.
 	#
-	# Migration, once: the existing registration lives in
-	# /var/lib/private/forgejo-runner. After the first switch, chown it to this
-	# user or the runner comes up unregistered:
-	#   sudo chown -R forgejo-runner:forgejo-runner /var/lib/private/forgejo-runner
+	# Migration, once. Leaving DynamicUser makes systemd move the state
+	# directory out of /var/lib/private, but it does not re-own it: the files
+	# keep the old dynamic uid, which maps to nothing afterwards and lists as
+	# `nobody nogroup`. The daemon starts regardless - registration is in the
+	# config file below, not in the state directory - and then fails the first
+	# job that writes a workdir. So, after the first switch:
+	#   sudo chown -R forgejo-runner:forgejo-runner /var/lib/forgejo-runner
 	users.users.forgejo-runner = {
 		isSystemUser = true;
 		group        = "forgejo-runner";

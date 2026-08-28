@@ -3,6 +3,14 @@
 		mode = "0755";
 		text = ''
 			#!/bin/sh
+
+			# Nothing may be printed to a non-interactive session. `ssh host cmd`
+			# makes bash read ~/.bashrc, which sources /etc/bashrc and then
+			# /etc/profile, which runs this - so without the guard, scp, sftp and
+			# rsync all get this box prepended to their stream and fail with
+			# "Received message too long".
+			[ -t 1 ] || exit 0
+
 			motd() {
 				local secret=$(cat ${config.sops.secrets."motd/secret".path})
 				local user=$(whoami)
