@@ -94,8 +94,9 @@ in {
           '';
 
 
-          # The ledger. LAN + tailnet only, and that is the whole of its access
-          # control: no route in financio authenticates anything.
+          # The ledger. LAN + tailnet only. financio has its own login now, with
+          # one SQLite file per user, so this is the outer fence rather than the
+          # only one - /api/health is the sole route it serves unauthenticated.
           #
           # New name, so first issuance hits the same slow domeneshop
           # propagation git.ybmn.no did - wait for the TXT record to settle

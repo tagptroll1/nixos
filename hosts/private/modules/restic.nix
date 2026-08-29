@@ -16,13 +16,21 @@ let
 	# the bank will never return again. There is no other copy.
 	financioDir = "/var/lib/financio";
 
-	# Same treatment as forgejo's db: a consistent copy taken by sqlite3
-	# .backup right before each run, with the live files excluded. Copying a WAL
-	# database file by file gives a silently stale or corrupt ledger.
-	financioSnapshot = "/mnt/data/backup/financio.sqlite";
+	# One ledger per login, at tenants/<slug>/database.db. There is no single
+	# file to back up any more, so the prepare command below loops.
+	financioLedgers = "${financioDir}/tenants";
+
+	# Same treatment as forgejo's db: consistent copies taken by sqlite3 .backup
+	# right before each run, with the live files excluded. Copying a WAL database
+	# file by file gives a silently stale or corrupt ledger.
+	#
+	# A directory rather than one path, because missing a ledger here would be
+	# silent until somebody tried to restore it.
+	financioSnapshots = "/mnt/data/backup/financio";
 in {
 	systemd.tmpfiles.rules = [
 		"d /mnt/data/backup 0700 root root - -"
+		"d ${financioSnapshots} 0700 root root - -"
 	];
 
 	services.restic.backups.private = {
@@ -47,7 +55,7 @@ in {
 			# points, and a bad import discovered after the nightly run is exactly
 			# when the off-site copy of them matters.
 			financioDir
-			financioSnapshot
+			financioSnapshots
 		];
 
 		exclude = [
@@ -58,20 +66,44 @@ in {
 			"${forgejoDir}/log"
 			"${forgejoDir}/data/tmp"
 
-			# Live files - covered by financioSnapshot; reading them mid-write
-			# risks a torn copy.
+			# Live files - covered by financioSnapshots; reading them mid-write
+			# risks a torn copy. One glob per user, since each login has its own
+			# ledger. The pre-login path is still listed: a host that has not run
+			# the move yet has one sitting there.
+			"${financioLedgers}/*/database.db"
+			"${financioLedgers}/*/database.db-wal"
+			"${financioLedgers}/*/database.db-shm"
 			"${financioDir}/database.db"
 			"${financioDir}/database.db-wal"
 			"${financioDir}/database.db-shm"
 		];
 
 		backupPrepareCommand = ''
+			#!${pkgs.runtimeShell}
+			# writeScript adds no shebang and no error handling of its own, so a
+			# failed copy would otherwise leave restic backing up yesterday's
+			# snapshot and reporting success.
+			set -eu
+
 			${pkgs.sqlite}/bin/sqlite3 ${forgejoDir}/data/forgejo.db ".backup '${dbSnapshot}'"
 
-			# The ledger may not exist yet on a host that has not deployed
+			# One consistent copy per login. A ledger that was silently skipped
+			# is the worst outcome here and stays invisible until somebody tries
+			# to restore it, so a failure on any one of them stops the run.
+			#
+			# Ledgers may not exist at all on a host that has not deployed
 			# financio, and a missing one must not fail forgejo's backup.
+			for db in ${financioLedgers}/*/database.db; do
+				[ -f "$db" ] || continue
+
+				slug=$(basename "$(dirname "$db")")
+				${pkgs.sqlite}/bin/sqlite3 "$db" ".backup '${financioSnapshots}/$slug.sqlite'"
+			done
+
+			# Left behind by a host that has not had its ledger moved into
+			# tenants/<slug>/ yet. Still the only copy until it is.
 			if [ -f ${financioDir}/database.db ]; then
-				${pkgs.sqlite}/bin/sqlite3 ${financioDir}/database.db ".backup '${financioSnapshot}'"
+				${pkgs.sqlite}/bin/sqlite3 ${financioDir}/database.db ".backup '${financioSnapshots}/pre-login.sqlite'"
 			fi
 		'';
 
