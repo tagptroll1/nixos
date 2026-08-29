@@ -32,6 +32,7 @@
 		./modules/immich.nix
 		./modules/immich-public-proxy.nix
 		./modules/jellyfin.nix
+		./modules/ocr.nix
 	];
 
 	myServices.palworld.enable = false;

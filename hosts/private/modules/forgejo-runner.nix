@@ -29,6 +29,15 @@ let
 		};
 	};
 in {
+	# media is the only host this runner deploys to besides its own, and it does
+	# it over ssh. Pinning the host key here means the workflow needs no
+	# StrictHostKeyChecking=no and no known_hosts of its own: a machine-in-the-
+	# middle on the LAN cannot collect the deploy key.
+	programs.ssh.knownHosts.media = {
+		hostNames = [ "media.ybmn.no" "10.2.10.10" ];
+		publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIE6+o4gslXAItJJmoop4c6aR6A/urVH/qYslEDPZw47z";
+	};
+
 	# A static user, not DynamicUser. Two reasons, both from the deploy path in
 	# financio.nix: a dynamic uid cannot own /var/lib/financio-releases, and
 	# DynamicUser puts the runner's own state under /var/lib/private, which is
@@ -77,6 +86,8 @@ in {
 			jq
 			systemd
 			pnpm
+			# financio-ocr ships its binary to media over ssh.
+			rsync
 		];
 
 		serviceConfig = {

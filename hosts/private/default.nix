@@ -70,5 +70,16 @@
 			sopsFile = ./secrets/forgejoSecret.yaml;
 			key = "runner_token";
 		};
+		# The private half of the key media authorises for its
+		# financio-ocr-deploy user. It can do exactly two things there - rsync
+		# into the releases directory, and say a release is ready - because
+		# media binds it to a forced command (hosts/media/modules/ocr.nix).
+		# Owned by the runner, which is the only thing that uses it.
+		"financio-ocr/deploy_key" = {
+			sopsFile = ./secrets/financioOcrSecret.yaml;
+			key = "deploy_key";
+			owner = "forgejo-runner";
+			mode = "0400";
+		};
 	};
 }
