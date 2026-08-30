@@ -42,7 +42,7 @@ let
     # The bank redirects the browser to <PUBLIC_URL>/api/auth/callback after
     # consent, so this has to be what the user actually reaches it through.
     PUBLIC_URL = "https://bank.ybmn.no";
-    RECEIPT_OCR_URL = "10.2.10.10:8099";
+    RECEIPT_OCR_URL = "http://10.2.10.10:8099";
   };
 
   # Shared by the server and the nightly sync: same user, same state, same
