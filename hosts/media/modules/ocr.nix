@@ -31,7 +31,7 @@ let
   financioHost = "10.0.20.5";
   port = 8099;
 
-  model = "qwen2.5vl:7b";
+  model = "qwen2.5vl:3b";
 
   # The runner's whole vocabulary on this host. Its key is bound to this script
   # with an authorized_keys `command=`, so nothing else can be run with it - not
@@ -181,6 +181,14 @@ in
       # add up to the total. The client sets its own deadline; this only has to
       # be longer than a legitimate read.
       OCR_TIMEOUT = "10m";
+    };
+
+    unitConfig = {
+      # Before the first deploy there is no binary, and without this the unit
+      # fail-loops on 203/EXEC and turns `nixos-rebuild switch` red for a state
+      # that is entirely normal. With it the unit is simply skipped until CI
+      # has put a release in place, and financio-ocr-deploy starts it then.
+      ConditionPathExists = binary;
     };
 
     serviceConfig = {
