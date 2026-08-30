@@ -176,7 +176,18 @@ in
       OCR_BIND_ADDR = "0.0.0.0";
       OLLAMA_URL = "http://127.0.0.1:11434";
       OCR_MODEL = model;
-      # A 7B vision model on a Pascal card is slow, and a receipt in several
+      # The GTX 1070 has 8 GB, and qwen2.5vl reserves a fixed ~4.9 GB for its
+      # vision encoder before the weights are even placed. Sending smaller
+      # images is the only lever that leaves room. 820000 is just above the
+      # model's own image_min_pixels floor of 802816 - anything smaller is
+      # upscaled back to it, so this is the smallest budget that is not
+      # wasted work.
+      #
+      # Measured on two real receipts: at this size, colour images read the
+      # paper receipt wrong every time and the high-contrast greyscale that
+      # OCR_ENHANCE turns on (the service default) reads both correctly.
+      OCR_MAX_PIXELS = "820000";
+      # A vision model on a Pascal card is slow, and a receipt in several
       # parts is one model call per part, plus a re-read when the lines do not
       # add up to the total. The client sets its own deadline; this only has to
       # be longer than a legitimate read.
