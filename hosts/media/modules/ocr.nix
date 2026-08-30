@@ -128,28 +128,11 @@ in
       # cannot quietly turn it on here.
       OLLAMA_FLASH_ATTENTION = "false";
 
-      # Hold 1.5 GiB of the card back from the language model, so the vision
-      # encoder has somewhere to go.
-      #
-      # llama.cpp sizes the language model against free VRAM without counting
-      # the vision encoder. The log says "estimated worst-case memory usage of
-      # mmproj is 6378.22 MiB", then "projected to use 2131 MiB of device
-      # memory vs. 8018 MiB of free device memory ... no changes needed". The
-      # CLIP weights then load onto the same card, and the encoder's warmup
-      # allocation - a fixed 4871 MiB, for a 1288x1288 dummy image unrelated to
-      # anything we send - no longer fits. The model loads regardless and then
-      # dies on the first real receipt with "unexpected EOF".
-      #
-      # ollama can put the vision encoder on the CPU instead
-      # (`--no-mmproj-offload`, and it has a retryWithMMProjCPUOffload path),
-      # but that retry only fires on a load failure, and this OOM happens
-      # during warmup, which is not fatal. There is no environment variable to
-      # force it. Leaving less room for the language model is the only lever
-      # from outside the process.
-      #
-      # The cost is that part of a 3B model runs on CPU. Raise this if a read
-      # still fails, lower it if reads work but are slower than they need to be.
-      OLLAMA_GPU_OVERHEAD = toString (1536 * 1024 * 1024);
+      # OLLAMA_GPU_OVERHEAD is deliberately not set here. It was tried at
+      # 1.5 GiB and 2.5 GiB and changed nothing: the log still reported
+      # "8018 MiB free" and "offloaded 37/37 layers to GPU" either way, so this
+      # ollama's fitting path does not consult it. The layer count is pinned
+      # from the service instead, with OCR_NUM_GPU below.
     };
   };
 
@@ -210,6 +193,30 @@ in
       # paper receipt wrong every time and the high-contrast greyscale that
       # OCR_ENHANCE turns on (the service default) reads both correctly.
       OCR_MAX_PIXELS = "820000";
+
+      # Keep nine of the model's 37 layers on the CPU, to leave the vision
+      # encoder the few hundred megabytes it is short of.
+      #
+      # The arithmetic on this card: llama.cpp fits the language model against
+      # free VRAM without counting the vision encoder at all - it prints
+      # "estimated worst-case memory usage of mmproj is 6378.22 MiB" and then
+      # "projected to use 2131 MiB ... vs. 8018 MiB of free ... no changes
+      # needed". The CLIP weights (~1.3 GB) then load onto the same card after
+      # that decision, and the encoder's warmup allocation - a fixed 4871 MiB,
+      # for a 1288x1288 dummy unrelated to any image we send - no longer fits.
+      # 1834 + 144 + 153 + ~1300 leaves ~4587 MiB against 4871 MiB wanted. The
+      # model loads regardless, and the first real receipt dies mid-encode with
+      # "unexpected EOF".
+      #
+      # ollama can run the encoder on the CPU instead - it has
+      # `--no-mmproj-offload` and a retryWithMMProjCPUOffload path - but that
+      # retry only fires when loading fails, and this failure happens during a
+      # warmup that is treated as non-fatal. No environment variable forces it.
+      #
+      # 28 of 37 layers is roughly 1400 MiB on the card instead of 1834. Raise
+      # it if reads succeed and are slower than they need to be; lower it if a
+      # read still dies with "unexpected EOF".
+      OCR_NUM_GPU = "28";
       # A vision model on a Pascal card is slow, and a receipt in several
       # parts is one model call per part, plus a re-read when the lines do not
       # add up to the total. The client sets its own deadline; this only has to
