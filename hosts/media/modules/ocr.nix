@@ -115,11 +115,11 @@ in
     loadModels = [ model ];
 
     environmentVariables = {
-      # Unload the model as soon as a receipt is done. It is about 6 GB and
+      # Unload the model as soon as a receipt is done. It is about 3 GB and
       # this card has 8, which immich is already using for NVENC transcoding
       # and its ML jobs (immich.nix). Receipts arrive a few times a week and
       # the read is asynchronous, so paying ~15s to load the model each time is
-      # much cheaper than holding three quarters of the card between them.
+      # much cheaper than holding half the card between them.
       OLLAMA_KEEP_ALIVE = "60s";
       OLLAMA_MAX_LOADED_MODELS = "1";
 
@@ -127,6 +127,29 @@ in
       # need sm_80. Off explicitly, so a nixpkgs bump that changes the default
       # cannot quietly turn it on here.
       OLLAMA_FLASH_ATTENTION = "false";
+
+      # Hold 1.5 GiB of the card back from the language model, so the vision
+      # encoder has somewhere to go.
+      #
+      # llama.cpp sizes the language model against free VRAM without counting
+      # the vision encoder. The log says "estimated worst-case memory usage of
+      # mmproj is 6378.22 MiB", then "projected to use 2131 MiB of device
+      # memory vs. 8018 MiB of free device memory ... no changes needed". The
+      # CLIP weights then load onto the same card, and the encoder's warmup
+      # allocation - a fixed 4871 MiB, for a 1288x1288 dummy image unrelated to
+      # anything we send - no longer fits. The model loads regardless and then
+      # dies on the first real receipt with "unexpected EOF".
+      #
+      # ollama can put the vision encoder on the CPU instead
+      # (`--no-mmproj-offload`, and it has a retryWithMMProjCPUOffload path),
+      # but that retry only fires on a load failure, and this OOM happens
+      # during warmup, which is not fatal. There is no environment variable to
+      # force it. Leaving less room for the language model is the only lever
+      # from outside the process.
+      #
+      # The cost is that part of a 3B model runs on CPU. Raise this if a read
+      # still fails, lower it if reads work but are slower than they need to be.
+      OLLAMA_GPU_OVERHEAD = toString (1536 * 1024 * 1024);
     };
   };
 
