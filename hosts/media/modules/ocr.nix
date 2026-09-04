@@ -2,6 +2,7 @@
   config,
   lib,
   pkgs,
+  inputs,
   ...
 }:
 let
@@ -31,7 +32,42 @@ let
   financioHost = "10.0.20.5";
   port = 8099;
 
-  model = "qwen2.5vl:3b";
+  # The model server financio-ocr talks to. Loopback only - nothing but
+  # financio-ocr ever calls it.
+  llamaPort = 8081;
+
+  # Qwen2.5-VL 3B at Q8_0, with the Q8_0 projector.
+  #
+  # The quantisation is not a detail. At Q4_K_M this model collapses two
+  # identical adjacent rows into one - two bottles of the same beer come back
+  # as a single line - deterministically, in six runs, at 0.82, 1.2 and 2.0 MP
+  # alike. Q8_0 of the same model reads both rows every time. Measured on this
+  # card against the two fixtures in the service repo.
+  #
+  # Bigger was tried. Qwen3-VL-8B-Q4_K_M is the only candidate that also
+  # prefers the card amount over a rounded printed TOTAL, but it wants
+  # 6.3 GB against this model's 4.6 GB, which leaves immich's ML container
+  # nothing, and it wobbles on the quantity of a "3 x 24,90" row. Qwen3-VL-4B
+  # loses that quantity too. This one keeps it.
+  modelRepo = "ggml-org/Qwen2.5-VL-3B-Instruct-GGUF:Q8_0";
+  mmprojURL = "https://huggingface.co/ggml-org/Qwen2.5-VL-3B-Instruct-GGUF/resolve/main/mmproj-Qwen2.5-VL-3B-Instruct-Q8_0.gguf";
+
+  # llama.cpp built for this card. The capability list has to be set through a
+  # nixpkgs instance, because llama-cpp takes its architectures from
+  # cudaPackages rather than from a package argument: nixpkgs' default list for
+  # CUDA 12.9 starts at 7.5 and this GTX 1070 (GP104) is 6.1, so the stock
+  # package finds the card and cannot use it. Building the one architecture
+  # also keeps the compile small, which matters because anything CUDA is
+  # unfree and therefore never in the binary cache - this host compiles it.
+  llamaCpp =
+    (import inputs.nixpkgs {
+      inherit (pkgs.stdenv.hostPlatform) system;
+      config = {
+        allowUnfree = true;
+        cudaSupport = true;
+        cudaCapabilities = [ "6.1" ];
+      };
+    }).llama-cpp;
 
   # The runner's whole vocabulary on this host. Its key is bound to this script
   # with an authorized_keys `command=`, so nothing else can be run with it - not
@@ -93,46 +129,55 @@ let
   };
 in
 {
-  services.ollama = {
+  # llama.cpp serves the model. This replaced ollama, which could not put this
+  # model on this card at all: ollama reserves a fixed ~4.9 GB for the vision
+  # encoder's warmup - sized for a 1288x1288 dummy image unrelated to anything
+  # we send - so the encoder had to be pushed onto the CPU sideways, by pinning
+  # 28 of 37 layers, and a read took 50-100 seconds per image.
+  #
+  # llama.cpp sizes the vision graph from the real image. The encoder costs
+  # ~400 MB, every layer stays on the card, and the same image reads in ~12
+  # seconds. Measured here, not inferred.
+  services.llama-cpp = {
     enable = true;
+    package = llamaCpp;
 
-    # Stock ollama-cuda is built for compute capability 7.5 and up - nixpkgs'
-    # default capability list for CUDA 12.9 has no Pascal in it, so the
-    # unmodified package finds this card and cannot use it. sm_61 is GP104,
-    # the GTX 1070 in gpu.nix. Building the one architecture also makes this
-    # compile roughly nine times smaller than the default nine-architecture
-    # build, which matters because ollama-cuda is unfree and therefore never
-    # in the binary cache - this host compiles it itself.
-    #
-    # (There is no `acceleration` option in this nixpkgs; the package is the
-    # option.)
-    package = pkgs.ollama-cuda.override { cudaArches = [ "sm_61" ]; };
+    settings = {
+      # Loopback only. financio talks to financio-ocr, never to this.
+      host = "127.0.0.1";
+      port = llamaPort;
 
-    # Loopback only. financio talks to financio-ocr, never to Ollama.
-    host = "127.0.0.1";
-    port = 11434;
+      # Weights and projector are fetched on first start into
+      # /var/cache/llama-cpp (LLAMA_CACHE, set by the module) and reused after
+      # that. The projector is named explicitly because -hf would otherwise
+      # pick one for us, and which one it picks is not a detail we want
+      # decided elsewhere.
+      hf-repo = modelRepo;
+      mmproj-url = mmprojURL;
 
-    loadModels = [ model ];
+      # Everything on the card, encoder included. This is the whole difference
+      # from the ollama arrangement.
+      n-gpu-layers = 999;
 
-    environmentVariables = {
-      # Unload the model as soon as a receipt is done. It is about 3 GB and
-      # this card has 8, which immich is already using for NVENC transcoding
-      # and its ML jobs (immich.nix). Receipts arrive a few times a week and
-      # the read is asynchronous, so paying ~15s to load the model each time is
-      # much cheaper than holding half the card between them.
-      OLLAMA_KEEP_ALIVE = "60s";
-      OLLAMA_MAX_LOADED_MODELS = "1";
+      # One slot. The default is four, which splits the KV cache four ways for
+      # a service that reads one image at a time; financio-ocr serialises on
+      # its own side anyway.
+      parallel = 1;
 
-      # Pascal has no usable fp16 path, and llama.cpp's flash attention kernels
+      # Prompt and answer together. 8192 rather than something smaller because
+      # of a measured receipt: 20 items came to 2111 tokens of image and
+      # prompt and 1985 generated, and at 4096 the answer stopped mid-array.
+      # The cost is about 150 MB of KV cache.
+      ctx-size = 8192;
+
+      # Pascal has no usable fp16 path and llama.cpp's flash attention kernels
       # need sm_80. Off explicitly, so a nixpkgs bump that changes the default
       # cannot quietly turn it on here.
-      OLLAMA_FLASH_ATTENTION = "false";
+      flash-attn = "off";
 
-      # OLLAMA_GPU_OVERHEAD is deliberately not set here. It was tried at
-      # 1.5 GiB and 2.5 GiB and changed nothing: the log still reported
-      # "8018 MiB free" and "offloaded 37/37 layers to GPU" either way, so this
-      # ollama's fitting path does not consult it. The layer count is pinned
-      # from the service instead, with OCR_NUM_GPU below.
+      # The warmup decodes a dummy token and buys nothing here - every real
+      # request carries an image, and nothing is cached between them anyway.
+      no-warmup = true;
     };
   };
 
@@ -168,11 +213,11 @@ in
     wantedBy = [ "multi-user.target" ];
     after = [
       "network-online.target"
-      "ollama.service"
+      "llama-cpp.service"
     ];
     wants = [
       "network-online.target"
-      "ollama.service"
+      "llama-cpp.service"
     ];
 
     environment = {
@@ -180,47 +225,26 @@ in
       # Reachable from private, which is the whole point of it living here. The
       # firewall rule below is what narrows that to one address.
       OCR_BIND_ADDR = "0.0.0.0";
-      OLLAMA_URL = "http://127.0.0.1:11434";
-      OCR_MODEL = model;
-      # The GTX 1070 has 8 GB, and qwen2.5vl reserves a fixed ~4.9 GB for its
-      # vision encoder before the weights are even placed. Sending smaller
-      # images is the only lever that leaves room. 820000 is just above the
-      # model's own image_min_pixels floor of 802816 - anything smaller is
-      # upscaled back to it, so this is the smallest budget that is not
-      # wasted work.
+      LLAMA_URL = "http://127.0.0.1:${toString llamaPort}";
+
+      # 820000 pixels is one image token per 28x28 pixels, so 1046 tokens -
+      # just above the 1024 the model's own preprocessor floors at, and
+      # anything smaller is upscaled back to it.
       #
-      # Measured on two real receipts: at this size, colour images read the
-      # paper receipt wrong every time and the high-contrast greyscale that
-      # OCR_ENHANCE turns on (the service default) reads both correctly.
+      # Under ollama this was a hard ceiling, because the encoder's fixed
+      # reservation left nothing. It is now a choice: at this size, colour
+      # images read the paper receipt wrong every time and the high-contrast
+      # greyscale that OCR_ENHANCE turns on (the service default) reads both
+      # fixtures correctly, and both 1.2 and 2.0 MP were measured to read no
+      # better while costing two to three times the encode. There is VRAM
+      # headroom to raise it now, but no reason found to.
       OCR_MAX_PIXELS = "820000";
 
-      # Keep nine of the model's 37 layers on the CPU, to leave the vision
-      # encoder the few hundred megabytes it is short of.
-      #
-      # The arithmetic on this card: llama.cpp fits the language model against
-      # free VRAM without counting the vision encoder at all - it prints
-      # "estimated worst-case memory usage of mmproj is 6378.22 MiB" and then
-      # "projected to use 2131 MiB ... vs. 8018 MiB of free ... no changes
-      # needed". The CLIP weights (~1.3 GB) then load onto the same card after
-      # that decision, and the encoder's warmup allocation - a fixed 4871 MiB,
-      # for a 1288x1288 dummy unrelated to any image we send - no longer fits.
-      # 1834 + 144 + 153 + ~1300 leaves ~4587 MiB against 4871 MiB wanted. The
-      # model loads regardless, and the first real receipt dies mid-encode with
-      # "unexpected EOF".
-      #
-      # ollama can run the encoder on the CPU instead - it has
-      # `--no-mmproj-offload` and a retryWithMMProjCPUOffload path - but that
-      # retry only fires when loading fails, and this failure happens during a
-      # warmup that is treated as non-fatal. No environment variable forces it.
-      #
-      # 28 of 37 layers is roughly 1400 MiB on the card instead of 1834. Raise
-      # it if reads succeed and are slower than they need to be; lower it if a
-      # read still dies with "unexpected EOF".
-      OCR_NUM_GPU = "28";
-      # A vision model on a Pascal card is slow, and a receipt in several
-      # parts is one model call per part, plus a re-read when the lines do not
-      # add up to the total. The client sets its own deadline; this only has to
-      # be longer than a legitimate read.
+      # A receipt in several parts is one model call per part, plus a re-read
+      # when the lines do not add up to the total. At ~12s an image that is
+      # about five minutes for the twelve-image maximum read twice. The client
+      # sets its own deadline; this only has to be longer than a legitimate
+      # read.
       OCR_TIMEOUT = "10m";
     };
 
