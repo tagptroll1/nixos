@@ -227,18 +227,31 @@ in
       OCR_BIND_ADDR = "0.0.0.0";
       LLAMA_URL = "http://127.0.0.1:${toString llamaPort}";
 
-      # 820000 pixels is one image token per 28x28 pixels, so 1046 tokens -
-      # just above the 1024 the model's own preprocessor floors at, and
-      # anything smaller is upscaled back to it.
+      # One image token covers 28x28 pixels, so this is 1097 of them - just
+      # above the 1024 the model's own preprocessor floors at.
       #
-      # Under ollama this was a hard ceiling, because the encoder's fixed
-      # reservation left nothing. It is now a choice: at this size, colour
-      # images read the paper receipt wrong every time and the high-contrast
-      # greyscale that OCR_ENHANCE turns on (the service default) reads both
-      # fixtures correctly, and both 1.2 and 2.0 MP were measured to read no
-      # better while costing two to three times the encode. There is VRAM
-      # headroom to raise it now, but no reason found to.
-      OCR_MAX_PIXELS = "820000";
+      # 820000 was the value under ollama, forced by the encoder's fixed
+      # reservation, and it is 5% too small. At 820000 the Clas Ohlson fixture
+      # comes back with the printed "TOTAL 400,00" instead of the 399,90 the
+      # card was actually charged, so its lines do not add up, it is read a
+      # second time, and it reaches the user flagged. At 860000 it reads 399,90
+      # and balances - three fresh runs, identical, plus the Rema pair still
+      # merging to 7 lines and 273,75. Every larger size tested (900k, 1.0 MP,
+      # 1.2 MP) also reads the card amount, so this is the cheap end of a
+      # threshold rather than a lucky number.
+      #
+      # It is not free, and the cost is permanent rather than per-request:
+      # llama-server keeps the largest vision compute buffer it has ever
+      # allocated for the life of the process. Measured on this card, each from
+      # a fresh restart - 4.6 GB with the model loaded and nothing read yet,
+      # then after one read at
+      #
+      #   860000 -> 6.1 GB      1.0 MP -> 6.5 GB      1.2 MP -> 7.4 GB
+      #
+      # and it stays there. That is why this is 860000 rather than the
+      # service's own 1.2 MP default: immich needs the rest of the 8 GB, and
+      # the only way to hand the buffer back is to restart the unit.
+      OCR_MAX_PIXELS = "860000";
 
       # A receipt in several parts is one model call per part, plus a re-read
       # when the lines do not add up to the total. At ~12s an image that is
