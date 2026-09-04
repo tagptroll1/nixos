@@ -178,6 +178,26 @@ in
       # The warmup decodes a dummy token and buys nothing here - every real
       # request carries an image, and nothing is cached between them anyway.
       no-warmup = true;
+
+      # Give the card back when no one is reading a receipt. This is the one
+      # thing ollama did better, through OLLAMA_KEEP_ALIVE, and llama-server
+      # has it too: on sleep the model, the KV cache and the vision compute
+      # buffer are all released, and the next request reloads them.
+      #
+      # It matters more here than it did there, because the compute buffer
+      # never shrinks on its own - once a read has allocated it, the process
+      # holds ~6.1 GB of this 8 GB card for as long as it runs. Receipts arrive
+      # a few times a week. immich wants the card the rest of the time.
+      #
+      # 60s mirrors the old OLLAMA_KEEP_ALIVE, and the cost is a model reload
+      # on the first read after an idle spell - seconds, against an extraction
+      # that is asynchronous anyway.
+      #
+      # Verified rather than assumed: /health and /v1/models both answer while
+      # the server is asleep and neither wakes it, so financio-ocr's health
+      # probe - which financio polls every 30s with the receipts tab open -
+      # cannot hold the model resident. Only a real read does.
+      sleep-idle-seconds = 60;
     };
   };
 
