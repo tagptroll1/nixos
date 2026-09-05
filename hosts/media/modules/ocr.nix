@@ -44,10 +44,12 @@ let
     beer is world knowledge the embedding of the words does not carry. Measured
     against financio's real tree, 3 of 9 lines became 9 of 9.
 
-    4B at Q4_K_M, ~2.5 GB. On eight of this box's threads a ten-line receipt
-    costs ~12s cold and ~8s warm - the category list is the same prompt prefix
-    every time, so llama-server's cache carries the prefill. The card is not
-    involved, which is the point: it must never take VRAM the reader needs.
+    4B at Q4_K_M, ~2.5 GB. Six threads read an eleven-line receipt in ~50s on
+    this box, close enough to the service's deadline to trip it, hence ten
+    below. The category list is the same prompt prefix every time, so
+    llama-server's cache carries most of the prefill between receipts. The card
+    is not involved, which is the point: it must never take VRAM the reader
+    needs.
   */
   classifyRepo = "unsloth/Qwen3-4B-Instruct-2507-GGUF:Q4_K_M";
 
@@ -272,8 +274,10 @@ in
         # prompt cache keeps the category list between receipts.
         "--parallel 1"
 
-        # immich transcodes on this box and a receipt is never urgent.
-        "--threads 6"
+        # immich transcodes on this box and a receipt is never urgent, but six
+        # threads read an eleven-line receipt in ~50s, which is close enough to
+        # the service.s deadline to have tripped it. Ten of twelve.
+        "--threads 10"
 
       ];
       Restart = "on-failure";
