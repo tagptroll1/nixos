@@ -35,32 +35,21 @@ let
   # The model servers financio-ocr talks to. Loopback only - nothing but
   # financio-ocr ever calls them.
   llamaPort = 8081;
-  embedPort = 8082;
+  classifyPort = 8083;
 
-  # The embedding model that names each line's category, on the CPU.
-  #
-  # A second server rather than a second model in the first one. Reading a
-  # receipt and naming a category are different jobs: one needs the card and
-  # takes seconds, the other needs neither and takes milliseconds. Keeping them
-  # apart means the categoriser cannot stall a read, cannot take VRAM the reader
-  # needs, and is unaffected by the reader sleeping.
-  #
-  # bge-m3, 560M parameters at Q8_0 - 605 MB on disk. It beat every candidate
-  # measured against financio's real 43-category tree and 39 real receipt lines:
-  # 92% of lines ranked onto a category a human accepts, against 87% for
-  # multilingual-e5-base, 85% for Qwen3-Embedding-0.6B and 74% for the
-  # embeddinggemma-300M that used to be here. It also needs no task prefix,
-  # so EMBED_ITEM_PREFIX and EMBED_CATEGORY_PREFIX stay unset.
-  #
-  # Two costs, both on the CPU and neither on the card. The first request after
-  # a restart embeds the whole tree - each category becomes its name plus one
-  # document per example product, ~340 documents for this ledger - and takes a
-  # few seconds. Every request after that only embeds the receipt's own lines,
-  # ~150ms for fifteen of them on a 24-thread desktop, because the category
-  # vectors are cached for the life of the process.
-  #
-  # The service repo's README has the full table and how to reproduce it.
-  embedRepo = "ggml-org/bge-m3-Q8_0-GGUF";
+  /*
+    The model that names each receipt line's category. An instruct model, on the
+    CPU, and it replaced an embedding model doing the same job: a till prints
+    brands - YOPLAIT KVARG, FRYDENLUND JUICY - and knowing those are dairy and
+    beer is world knowledge the embedding of the words does not carry. Measured
+    against financio's real tree, 3 of 9 lines became 9 of 9.
+
+    4B at Q4_K_M, ~2.5 GB. On eight of this box's threads a ten-line receipt
+    costs ~12s cold and ~8s warm - the category list is the same prompt prefix
+    every time, so llama-server's cache carries the prefill. The card is not
+    involved, which is the point: it must never take VRAM the reader needs.
+  */
+  classifyRepo = "unsloth/Qwen3-4B-Instruct-2507-GGUF:Q4_K_M";
 
   # Qwen2.5-VL 3B at Q8_0, with the Q8_0 projector.
   #
@@ -227,95 +216,6 @@ in
     };
   };
 
-  /*
-    The embedding server, written out by hand because `services.llama-cpp` is a
-    singleton and the vision model already has it.
-
-    Stock `pkgs.llama-cpp`, no CUDA: this never touches the card, which is the
-    point of it being a separate process. That also means it comes from the
-    binary cache instead of being compiled here, unlike the CUDA build above.
-  */
-  systemd.services.llama-cpp-embed = {
-    description = "llama.cpp embedding server - receipt line categories";
-    wantedBy = [ "multi-user.target" ];
-    after = [ "network-online.target" ];
-    wants = [ "network-online.target" ];
-
-    serviceConfig = {
-      ExecStart = toString [
-        (lib.getExe' pkgs.llama-cpp "llama-server")
-        "--hf-repo ${embedRepo}"
-        "--host 127.0.0.1"
-        "--port ${toString embedPort}"
-
-        # Embedding models only. Refuses to start on a model that is not one,
-        # which is a better failure than silently returning generation output.
-        "--embeddings"
-
-        # These three are worth 6x and are not optional.
-        #
-        # financio-ocr sends one request holding every line and every category.
-        # With llama-server's defaults - four slots, small batch - that request
-        # is split across slots and serialised: 63 inputs measured ~2000ms, which
-        # is slower than sending the same 63 one at a time. One slot and a batch
-        # large enough to hold the lot: ~350ms.
-        "--parallel 1"
-        "--batch-size 8192"
-        "--ubatch-size 8192"
-
-        # immich transcodes on this box and the receipt path is not urgent.
-        # Four of the twelve threads. The one slow moment this buys is the
-        # first request after a restart, which embeds the whole category tree;
-        # a receipt's own lines are milliseconds either way.
-        "--threads 4"
-      ];
-      Restart = "on-failure";
-      RestartSec = 10;
-
-      DynamicUser = true;
-      CacheDirectory = "llama-cpp-embed";
-      StateDirectory = "llama-cpp-embed";
-      WorkingDirectory = "/var/lib/llama-cpp-embed";
-      Environment = [ "LLAMA_CACHE=/var/cache/llama-cpp-embed" ];
-
-      # No GPU here, so this can be locked down harder than the vision server.
-      PrivateDevices = true;
-      AmbientCapabilities = [ "" ];
-      CapabilityBoundingSet = [ "" ];
-      LockPersonality = true;
-      MemoryDenyWriteExecute = true;
-      NoNewPrivileges = true;
-      PrivateMounts = true;
-      PrivateTmp = true;
-      PrivateUsers = true;
-      ProcSubset = "pid";
-      ProtectClock = true;
-      ProtectControlGroups = true;
-      ProtectHome = true;
-      ProtectHostname = true;
-      ProtectKernelLogs = true;
-      ProtectKernelModules = true;
-      ProtectKernelTunables = true;
-      ProtectProc = "invisible";
-      ProtectSystem = "strict";
-      RemoveIPC = true;
-      RestrictAddressFamilies = [
-        "AF_INET"
-        "AF_INET6"
-        "AF_UNIX"
-      ];
-      RestrictNamespaces = true;
-      RestrictRealtime = true;
-      RestrictSUIDSGID = true;
-      SystemCallArchitectures = "native";
-      SystemCallErrorNumber = "EPERM";
-      SystemCallFilter = [
-        "@system-service"
-        "~@privileged"
-      ];
-    };
-  };
-
   # A static user: it owns the releases directory, which a dynamic uid cannot.
   users.users.financio-ocr-deploy = {
     isSystemUser = true;
@@ -343,18 +243,83 @@ in
     "d ${releases} 0755 financio-ocr-deploy financio-ocr-deploy - -"
   ];
 
+  /*
+    The classifier, written out by hand because `services.llama-cpp` is a
+    singleton and the vision model already has it.
+
+    Stock pkgs.llama-cpp, no CUDA, and that is the design rather than a
+    limitation - this must never take VRAM the reader needs, and on the CPU it
+    is fast enough that there is nothing to gain.
+  */
+  systemd.services.llama-cpp-classify = {
+    description = "llama.cpp instruct server - receipt line categories";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "network-online.target" ];
+    wants = [ "network-online.target" ];
+
+    serviceConfig = {
+      ExecStart = toString [
+        (lib.getExe' pkgs.llama-cpp "llama-server")
+        "--hf-repo ${classifyRepo}"
+        "--host 127.0.0.1"
+        "--port ${toString classifyPort}"
+
+        # The category list, the rules and twenty lines fit in well under half
+        # of this; the rest is headroom for a larger tree.
+        "--ctx-size 8192"
+
+        # One slot: the whole context belongs to the request in flight, and the
+        # prompt cache keeps the category list between receipts.
+        "--parallel 1"
+
+        # immich transcodes on this box and a receipt is never urgent.
+        "--threads 6"
+
+      ];
+      Restart = "on-failure";
+      RestartSec = 10;
+
+      DynamicUser = true;
+      CacheDirectory = "llama-cpp-classify";
+      StateDirectory = "llama-cpp-classify";
+      WorkingDirectory = "/var/lib/llama-cpp-classify";
+      Environment = [ "LLAMA_CACHE=/var/cache/llama-cpp-classify" ];
+
+      # No GPU here either.
+      PrivateDevices = true;
+      AmbientCapabilities = [ "" ];
+      CapabilityBoundingSet = [ "" ];
+      NoNewPrivileges = true;
+      PrivateTmp = true;
+      ProtectSystem = "strict";
+      ProtectHome = true;
+      ProtectKernelTunables = true;
+      ProtectKernelModules = true;
+      ProtectControlGroups = true;
+      RestrictNamespaces = true;
+      RestrictRealtime = true;
+      RestrictSUIDSGID = true;
+      LockPersonality = true;
+      MemoryDenyWriteExecute = false;
+      SystemCallArchitectures = "native";
+      SystemCallFilter = [ "@system-service" ];
+    };
+  };
+
   systemd.services.financio-ocr = {
     description = "financio-ocr - receipt reading for financio";
     wantedBy = [ "multi-user.target" ];
     after = [
       "network-online.target"
       "llama-cpp.service"
-      "llama-cpp-embed.service"
+
+      "llama-cpp-classify.service"
     ];
     wants = [
       "network-online.target"
       "llama-cpp.service"
-      "llama-cpp-embed.service"
+
+      "llama-cpp-classify.service"
     ];
 
     environment = {
@@ -364,10 +329,16 @@ in
       OCR_BIND_ADDR = "0.0.0.0";
       LLAMA_URL = "http://127.0.0.1:${toString llamaPort}";
 
-      # The categoriser. Leaving this unset would make /categorise answer 503
-      # and change nothing about reading: naming a category is an improvement on
-      # top of a reading, never a precondition for one.
-      EMBED_URL = "http://127.0.0.1:${toString embedPort}";
+      # The categoriser. Unset, /categorise answers 503 and nothing about
+      # reading changes: naming a category is an improvement on top of a
+      # reading, never a precondition for one.
+      #
+      # There was a second implementation on port 8082, an embedding model,
+      # kept for a while as a fallback. It is gone. It named 3 of 9 lines
+      # correctly on a real receipt, and a fallback that answers wrongly is
+      # worse than no fallback - financio already handles being told nothing,
+      # by storing the receipt with blank categories for the user to fill in.
+      CLASSIFY_URL = "http://127.0.0.1:${toString classifyPort}";
 
       # One image token covers 28x28 pixels, so this is 1097 of them - just
       # above the 1024 the model's own preprocessor floors at.
