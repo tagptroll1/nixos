@@ -325,8 +325,8 @@ in
                         #   3780682550  EquipmentUI_B42       Equipment UI
                         #   3778511497  SkullysZombieCollision Skully's Zombie Collision
                         #   3779561845  LGExtendedPlumbing    LG Extended Plumbing
-                        WorkshopItems=3508537032;3437629766;3536052310;3502080466;3461263912;3774826484;3577903007;3689524052;3436537035;3739168410;3387539308;3668370011;3538353228;3552050880;3558839307;3560352772;3549294472;3629835761;3490188370;3779562002;3784847437;2866258937;3780682550;3778511497;3779561845;2847184718;3792740760
-                        Mods=NeatUI_Framework;CleanUI;Neat_Building;Neat_Crafting;CleanHotBar;JumboTreeIndoorFix;VanillaFoodsExpanded;LTWB42;UsefulBarrelsMP;Obvious_Skill_Tapes;AutoMechanics;LKB42;LBB42;LFB42;LDB42;LSB42;LCB42;Ladders4220;Project_Cook_Pixel_Icon_Pack;Project_Cook;LGExtendedElectricity;traitsAsSkills;MiniHealthPanel;EquipmentUI_B42;SkullysZombieCollision;LGExtendedPlumbing;ProximityInventory;TrueLineOfSight
+                        WorkshopItems=3508537032;3437629766;3536052310;3502080466;3461263912;3774826484;3577903007;3689524052;3436537035;3739168410;3387539308;3668370011;3538353228;3552050880;3558839307;3560352772;3549294472;3629835761;3490188370;3779562002;3784847437;2866258937;3780682550;3778511497;3779561845;2847184718
+                        Mods=NeatUI_Framework;CleanUI;Neat_Building;Neat_Crafting;CleanHotBar;JumboTreeIndoorFix;VanillaFoodsExpanded;LTWB42;UsefulBarrelsMP;Obvious_Skill_Tapes;AutoMechanics;LKB42;LBB42;LFB42;LDB42;LSB42;LCB42;Ladders4220;Project_Cook_Pixel_Icon_Pack;Project_Cook;LGExtendedElectricity;traitsAsSkills;MiniHealthPanel;EquipmentUI_B42;SkullysZombieCollision;LGExtendedPlumbing;ProximityInventory
       '';
     };
 
