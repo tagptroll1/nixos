@@ -279,6 +279,18 @@ in
         # the service.s deadline to have tripped it. Ten of twelve.
         "--threads 10"
 
+        # Hand the memory back between receipts, the same way
+        # services.llama-cpp does for the vision server above. Awake, this
+        # process holds ~2.8 GB of anonymous memory on top of the ~2.3 GB of
+        # page cache its mmapped weights occupy, and it holds it from boot to
+        # shutdown for a job the receipts arrive for a few times a week. On a
+        # VM whose every touched page is pinned on the Proxmox host, resident
+        # and idle is the expensive combination.
+        #
+        # 60s matches the vision server. The cost is a reload on the first
+        # read after an idle spell, which is affordable: financio-ocr treats a
+        # missing category as normal and stores the receipt without one.
+        "--sleep-idle-seconds 60"
       ];
       Restart = "on-failure";
       RestartSec = 10;

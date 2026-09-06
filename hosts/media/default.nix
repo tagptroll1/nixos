@@ -17,6 +17,7 @@
     ./modules/networking.nix
     ./modules/users.nix
     ./modules/packages.nix
+    ./modules/memory.nix
     ./modules/storage.nix
     ./modules/gpu.nix
     ./modules/tailscale.nix
@@ -37,7 +38,7 @@
 
   myServices.palworld.enable = false;
   myServices.factorio-server.enable = false;
-  myServices.zomboid.enable = false;
+  myServices.zomboid.enable = true;
 
   sops.age.keyFile = "/etc/age/host.key";
   sops.secrets = {
