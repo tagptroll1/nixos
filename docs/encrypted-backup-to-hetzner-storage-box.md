@@ -339,6 +339,56 @@ If the file comes back identical, the chain is healthy.
 
 ---
 
+## One subaccount per host
+
+Once a second machine backs up to the same box, stop using the main account.
+A host authenticating as `uXXXXXX` can read and delete **every** repository on
+the box, so any host that gets compromised takes the others' backups with it.
+A subaccount is chrooted to its own base directory and cannot see the rest.
+
+Current layout on the BX11 `home02-backup` box:
+
+| Account | Base dir | Used by | Repository |
+|---|---|---|---|
+| `u586986` | `/` | nothing — password-only break-glass | — |
+| `u586986-sub1` | `/restic-home02` | home02 | `sftp:hetzner-backup:.` |
+| `u586986-sub2` | `/restic-private-git-forgejo` | private (Forgejo) | `sftp:storagebox:restic` |
+
+Things that are not obvious, each of which cost time:
+
+- **A subaccount gets its own hostname**, not just its own username:
+  `uXXXXXX-subN.your-storagebox.de`. Connecting to the main account's hostname
+  with a subaccount username fails.
+- **`install-ssh-key` works for subaccounts**, run as the subaccount. Its key
+  lands in `<base dir>/.ssh/authorized_keys` — inside its own chroot. Pipe the
+  public key in and pass `install-ssh-key` as the *remote command*; it is not
+  something you can type at a prompt, because the box has no shell.
+- **The base dir becomes the account's root**, so repository paths shift. A
+  repo at `/restic-home02` addressed as `restic-home02` by the main account
+  becomes `.` for a subaccount based there. Verify with a read-only
+  `restic snapshots` before changing anything — a wrong path reports "repository
+  does not exist", and an unattended job with `restic init` behaviour would
+  happily start an empty one.
+- **Never set a base dir to `/.ssh/`.** That directory holds the main account's
+  `authorized_keys`; an account chrooted there can append its own key and
+  escalate to the main account, which defeats the entire point.
+- `ls` over SFTP hides dotfiles. Use `ls -a` before concluding `.ssh` is empty.
+- Absolute paths do not work in an SFTP session (see step 7) — `mkdir
+  /restic-home02/x` fails, `mkdir restic-home02/x` works.
+
+Migrating an existing host onto a subaccount, in order: install its existing
+key on the subaccount, repoint the `Host hetzner-backup` block in
+`/root/.ssh/config` (`HostName` **and** `User`), test with a read-only
+`restic snapshots` against the new path, update `RESTIC_REPOSITORY` in both
+`/root/.config/restic/env` and `/usr/local/sbin/restic-backup.sh`, run one real
+backup, and only then remove the main account's key from `.ssh/authorized_keys`.
+
+Concurrency is shared across the whole box: a BX11 allows 10 connections and
+restic's sftp backend uses several per repository, so stagger the hosts'
+timers rather than letting them all fire at 03:30.
+
+---
+
 ## Reconnecting from a new machine
 
 If you need to access the repository from another host (recovery,

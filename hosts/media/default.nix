@@ -37,7 +37,7 @@
 
   myServices.palworld.enable = false;
   myServices.factorio-server.enable = false;
-  myServices.zomboid.enable = true;
+  myServices.zomboid.enable = false;
 
   sops.age.keyFile = "/etc/age/host.key";
   sops.secrets = {
