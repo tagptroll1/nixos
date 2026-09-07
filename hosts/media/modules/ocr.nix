@@ -388,6 +388,25 @@ in
       # sets its own deadline; this only has to be longer than a legitimate
       # read.
       OCR_TIMEOUT = "10m";
+
+      # A reading outlives the request that asked for it. financio sends an
+      # Idempotency-Key, gets a job id back at once and collects the answer from
+      # GET /jobs/{id} later, so a restart on either side no longer throws away
+      # a reading in flight. These two bound what that costs here.
+      #
+      # The jobs are held in memory only, deliberately: the images and the
+      # receipt row live on private, so a restart of this unit costs the GPU
+      # seconds and nothing else - financio notices the answer never came and
+      # posts the same bytes again.
+      #
+      # An hour is how long a finished reading waits to be collected. It has to
+      # outlast a financio deploy, which is a restart mid-poll.
+      JOB_TTL = "1h";
+      # Eight queued or running jobs. A queued read holds its images in memory
+      # and financio reads one receipt at a time per ledger, so this is headroom
+      # for several ledgers rather than a throughput setting - the card still
+      # does one at a time.
+      JOB_MAX = "8";
     };
 
     unitConfig = {
