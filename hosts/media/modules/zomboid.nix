@@ -18,13 +18,38 @@
   ...
 }:
 let
-  # Everything lives on the games share (see storage.nix), same as cs2/factorio.
-  # HOME points at zomboidRoot so steamcmd keeps its own state
+  # The 7 GB steam install lives on the games share (see storage.nix), same as
+  # cs2/factorio. HOME points at zomboidRoot so steamcmd keeps its own state
   # (~/.local/share/Steam) inside it; the server is pointed at its data
   # directory with -cachedir instead.
   zomboidRoot = "/mnt/games/zomboid";
   zomboidServer = "${zomboidRoot}/server"; # steamcmd force_install_dir
-  zomboidData = "${zomboidRoot}/Zomboid"; # server writes config/saves/db here
+
+  # Saves, the player db and the ini go on the VM's local disk rather than the
+  # games share, because the periodic save has to finish inside 600 ms.
+  #
+  # Over that, the server broadcasts StartPause to freeze every client while it
+  # writes. The matching StopPause only goes out if the 600 ms was already
+  # crossed at the last check before the final save step, and
+  # ServerMap.QueuedSaveAll checks the clock once more after that decision - so
+  # a save that only crosses 600 ms during that final step pauses every client
+  # and never unpauses them. A paused client is frozen until its process is
+  # restarted: the flag is a static in GameClient that only a StopPause packet
+  # clears, and nothing on the server can send one on demand. It also stops
+  # sending player updates, so AntiCheatPlayer kicks it about 30 s later.
+  #
+  # /mnt/games is virtiofs onto the host's ZFS pool and fsyncs there cost
+  # ~10 ms against ~0.8 ms on this disk, which is what pushed saves with
+  # players online from ~50 ms to 120-850 ms and tripped that bug seven times
+  # in three weeks. Local disk keeps them an order of magnitude clear of it.
+  zomboidData = "/var/lib/zomboid"; # server writes config/saves/db here
+
+  # The world backups stay on the games share: they are the only copy of the
+  # save that reaches the host's ZFS datasets, which is what gets backed up
+  # off-site, and ten of them is 15 GB, which the VM's root disk has no room
+  # for. They are written on start and on version change, never inside the
+  # periodic save, so their latency does not matter.
+  zomboidBackups = "${zomboidRoot}/backups";
 
   # Picks which config files the server reads:
   #   <zomboidData>/Server/<serverName>.ini
@@ -230,6 +255,14 @@ in
         group = "games";
         mode = "2770";
       };
+      # The server writes its backup zips into <cachedir>/backups, so that path
+      # is a link back onto the games share rather than a directory.
+      "${zomboidBackups}".d = {
+        user = "games";
+        group = "games";
+        mode = "2770";
+      };
+      "${zomboidData}/backups"."L+".argument = zomboidBackups;
       # Where the steamworks game server library looks for steamclient.so.
       # Without it the server falls back to the copy in its install directory
       # and only half initialises steam.
