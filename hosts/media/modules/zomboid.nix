@@ -369,13 +369,28 @@ in
       '';
     };
 
-    # -adminpassword goes through the environment so the plaintext is not written
-    # to the nix store. It is re-applied on every start.
+    # RCON password for the two scripted units, out of the nix store.
     sops.templates."zomboid.env" = {
       owner = "games";
       content = ''
-        ZOMBOID_ADMIN_PASSWORD=${config.sops.placeholder."zomboid/admin_pw"}
         ZOMBOID_RCON_PASSWORD=${config.sops.placeholder."zomboid/rcon_pw"}
+      '';
+    };
+
+    # Fed to the server on stdin, not argv. The launcher's -adminpassword lands
+    # in the JVM's command line, where /proc/<pid>/cmdline is world readable and
+    # `systemctl status` prints it in full - so the password reaches every local
+    # user and every log or paste of that output.
+    #
+    # Without the flag the launcher prompts for the admin password on stdin, and
+    # only when the account is missing from <zomboidData>/db/<serverName>.db.
+    # Twice, because it asks for the password and then a confirmation; an
+    # already-created admin never reads the file at all.
+    sops.templates."zomboid.adminpw" = {
+      owner = "games";
+      content = ''
+        ${config.sops.placeholder."zomboid/admin_pw"}
+        ${config.sops.placeholder."zomboid/admin_pw"}
       '';
     };
 
@@ -400,7 +415,11 @@ in
         User = "games";
         Group = "games";
         WorkingDirectory = zomboidServer;
-        EnvironmentFile = config.sops.templates."zomboid.env".path;
+
+        # Answers the launcher's admin password prompt on first start. The
+        # running server reads no further input, so the file is closed unread on
+        # every start after the account exists.
+        StandardInput = "file:${config.sops.templates."zomboid.adminpw".path}";
 
         # Nothing to start before the game files exist. A failing ExecCondition
         # leaves the unit inactive instead of triggering Restart=, so an empty
@@ -430,7 +449,7 @@ in
         # spelling of -Dzomboid.steam=0) moves everything onto RakNet instead,
         # at the price of every client needing -nosteam in its own launch
         # options - a non-steam client can only join a non-steam server.
-        ExecStart = "${pkgs.steam-run}/bin/steam-run ${zomboidServer}/start-server.sh -cachedir=${zomboidData} -servername ${serverName} -adminusername admin -adminpassword \${ZOMBOID_ADMIN_PASSWORD}";
+        ExecStart = "${pkgs.steam-run}/bin/steam-run ${zomboidServer}/start-server.sh -cachedir=${zomboidData} -servername ${serverName} -adminusername admin";
 
         # A ceiling, not a tuning knob. -Xmx bounds the Java heap and nothing
         # else: metaspace, GC structures, thread stacks and the native
