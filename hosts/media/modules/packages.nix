@@ -9,7 +9,6 @@
     btop
     sops
     pciutils
-    nvtopPackages.nvidia
     rcon-cli
   ];
 }

@@ -7,6 +7,7 @@
     ../../shared/modules/base.nix
     ../../shared/modules/overlays.nix
     ../../shared/modules/sshd.nix
+    ../../shared/modules/dns.nix
     (import ../../shared/modules/newt.nix {
       endpoint = "https://pangolin.yesbutmaybe.no";
       secretIdKey = "newt-id-media";
@@ -19,7 +20,6 @@
     ./modules/packages.nix
     ./modules/memory.nix
     ./modules/storage.nix
-    ./modules/gpu.nix
     ./modules/tailscale.nix
     ./modules/caddy.nix
     ./modules/cockpit.nix
@@ -30,10 +30,6 @@
     ./modules/zomboid.nix
     ./modules/mealie.nix
     ./modules/opencloud.nix
-    ./modules/immich.nix
-    ./modules/immich-public-proxy.nix
-    ./modules/jellyfin.nix
-    ./modules/ocr.nix
   ];
 
   myServices.palworld.enable = false;

@@ -1,21 +1,20 @@
 {
-  config,
   lib,
   pkgs,
   inputs,
   ...
 }:
 let
-  # financio-ocr reads a photographed till receipt into its lines. It runs on
-  # this host because this is the machine with the GPU; the ledger it serves
-  # lives on private, which has none.
+  # financio-ocr reads a photographed till receipt into its lines. It runs in
+  # this container because this is where the GPU is; the ledger it serves lives
+  # on private, which has none.
   #
   # The binary is built by the Forgejo runner on private and pushed here, the
   # same shape as financio itself (hosts/private/modules/financio.nix). It is
   # deliberately not a nix package even though it could be one - pure Go, no
-  # cgo, no frontend. The code lives in Forgejo on private, and media is not
-  # allowed to open connections back to private, so media cannot fetch it. The
-  # allowed direction is private pushing here, so that is the direction the
+  # cgo, no frontend. The code lives in Forgejo on private, and this host is not
+  # allowed to open connections back to private, so it cannot fetch the binary.
+  # The allowed direction is private pushing here, so that is the direction the
   # binary travels.
   #
   # The trade-off, written down because it is not the usual one: a NixOS
@@ -204,7 +203,9 @@ in
       # It matters more here than it did there, because the compute buffer
       # never shrinks on its own - once a read has allocated it, the process
       # holds ~6.1 GB of this 8 GB card for as long as it runs. Receipts arrive
-      # a few times a week. immich wants the card the rest of the time.
+      # a few times a week, and the other containers that share this card want
+      # it the rest of the time. This setting is the whole reason they all fit
+      # on one 8 GB card.
       #
       # 60s mirrors the old OLLAMA_KEEP_ALIVE, and the cost is a model reload
       # on the first read after an idle spell - seconds, against an extraction
@@ -229,11 +230,6 @@ in
       # The Forgejo runner on private. `restrict` turns off every forwarding
       # and tty feature; `command=` means the key can do nothing but the two
       # verbs in deployShell above.
-      #
-      # Replace REPLACE-WITH-RUNNER-PUBLIC-KEY with the public half of the key
-      # in hosts/private/secrets/financioOcrSecret.yaml. Generate the pair on
-      # any machine, keep the private half in sops:
-      #   ssh-keygen -t ed25519 -N "" -C forgejo-runner@private -f /tmp/ocrdeploy
       ''command="${lib.getExe deployShell}",restrict ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ64bKvkMWLB2d1VlTM5FtcG0WgpxFzlcpTUvkTnU5l/ forgejo-runner@private''
     ];
   };
@@ -274,18 +270,18 @@ in
         # prompt cache keeps the category list between receipts.
         "--parallel 1"
 
-        # immich transcodes on this box and a receipt is never urgent, but six
-        # threads read an eleven-line receipt in ~50s, which is close enough to
-        # the service.s deadline to have tripped it. Ten of twelve.
+        # A receipt is never urgent and this host shares home02's 16 threads
+        # with everything else on it, but six threads read an eleven-line
+        # receipt in ~50s, which is close enough to the service's deadline to
+        # have tripped it. Ten of twelve.
         "--threads 10"
 
         # Hand the memory back between receipts, the same way
         # services.llama-cpp does for the vision server above. Awake, this
         # process holds ~2.8 GB of anonymous memory on top of the ~2.3 GB of
-        # page cache its mmapped weights occupy, and it holds it from boot to
-        # shutdown for a job the receipts arrive for a few times a week. On a
-        # VM whose every touched page is pinned on the Proxmox host, resident
-        # and idle is the expensive combination.
+        # page cache its mmapped weights occupy. The page cache is home02's to
+        # reclaim; the anonymous 2.8 GB is not, and holding it from boot to
+        # shutdown for a job that runs a few times a week is what this avoids.
         #
         # 60s matches the vision server. The cost is a reload on the first
         # read after an idle spell, which is affordable: financio-ocr treats a
@@ -359,15 +355,14 @@ in
       # One image token covers 28x28 pixels, so this is 1097 of them - just
       # above the 1024 the model's own preprocessor floors at.
       #
-      # 820000 was the value under ollama, forced by the encoder's fixed
-      # reservation, and it is 5% too small. At 820000 the Clas Ohlson fixture
-      # comes back with the printed "TOTAL 400,00" instead of the 399,90 the
-      # card was actually charged, so its lines do not add up, it is read a
-      # second time, and it reaches the user flagged. At 860000 it reads 399,90
-      # and balances - three fresh runs, identical, plus the Rema pair still
-      # merging to 7 lines and 273,75. Every larger size tested (900k, 1.0 MP,
-      # 1.2 MP) also reads the card amount, so this is the cheap end of a
-      # threshold rather than a lucky number.
+      # 820000 is 5% too small: the Clas Ohlson fixture comes back with the
+      # printed "TOTAL 400,00" instead of the 399,90 the card was actually
+      # charged, so its lines do not add up, it is read a second time, and it
+      # reaches the user flagged. At 860000 it reads 399,90 and balances -
+      # three fresh runs, identical, plus the Rema pair still merging to 7
+      # lines and 273,75. Every larger size tested (900k, 1.0 MP, 1.2 MP) also
+      # reads the card amount, so this is the cheap end of a threshold rather
+      # than a lucky number.
       #
       # It is not free, and the cost is permanent rather than per-request:
       # llama-server keeps the largest vision compute buffer it has ever
@@ -378,8 +373,9 @@ in
       #   860000 -> 6.1 GB      1.0 MP -> 6.5 GB      1.2 MP -> 7.4 GB
       #
       # and it stays there. That is why this is 860000 rather than the
-      # service's own 1.2 MP default: immich needs the rest of the 8 GB, and
-      # the only way to hand the buffer back is to restart the unit.
+      # service's own 1.2 MP default: the containers sharing this card need the
+      # rest of the 8 GB, and the only way to hand the buffer back is to
+      # restart the unit.
       OCR_MAX_PIXELS = "860000";
 
       # A receipt in several parts is one model call per part, plus a re-read
@@ -481,9 +477,9 @@ in
     '';
   };
 
-  # Same shape as immich-public-proxy.nix: the port is not opened generally,
-  # one source address is let through. Receipt photographs are personal, and
-  # this host runs plenty else.
+  # The port is not opened generally, one source address is let through.
+  # Receipt photographs are personal, and this container has no business
+  # answering anything else on the Media subnet.
   networking.firewall.extraCommands = ''
     iptables -A nixos-fw -s ${financioHost} -p tcp --dport ${toString port} -j nixos-fw-accept
   '';
@@ -491,8 +487,7 @@ in
     iptables -D nixos-fw -s ${financioHost} -p tcp --dport ${toString port} -j nixos-fw-accept || true
   '';
 
-  # Deliberately not behind this host's Caddy. Its shared trustedMatcher
-  # (caddy.nix) does not include private's 10.0.20.0/24, and widening it would
-  # open every other gated service here; and private resolves through
-  # 8.8.8.8/1.1.1.1, so it cannot resolve a split-DNS *.ybmn.no name anyway.
+  # Deliberately not behind a reverse proxy. private resolves through
+  # 8.8.8.8/1.1.1.1, so it cannot resolve a split-DNS *.ybmn.no name, and the
+  # one client speaks to an address and a port that the rule above pins down.
 }

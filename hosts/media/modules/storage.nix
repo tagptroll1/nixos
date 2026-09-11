@@ -8,34 +8,16 @@ let
       options = [ "defaults" "nofail" "x-systemd.device-timeout=10s" ];
     };
   };
-
-  # Bind mounts splice host-owned ZFS datasets into Immich's per-user
-  # library directory. The storage template puts user.storageLabel as
-  # the first path segment (`library/<label>/<y>/<MM>/<filename>`), so
-  # we mirror those label paths to the matching dataset on home02.
-  bind = source: target: {
-    ${target} = {
-      device = source;
-      fsType = "none";
-      options = [ "bind" "x-systemd.requires-mounts-for=${source}" ];
-    };
-  };
-
-  # Storage labels assigned to each Immich user. Adding a user means:
-  # set their account's Storage Label to a new entry here, then add the
-  # bind mount + tmpfiles entry below.
-  labels = {
-    tagp = "tagp";
-    karoline = "karoline";
-  };
 in {
+  # /mnt/media and /mnt/games carry the game servers' data. /mnt/tagp and
+  # /mnt/karoline are the household datasets; nothing here writes to them, but
+  # they stay mounted because this is the host with an interactive login and a
+  # file browser, and dropping them would mean editing the Proxmox side too.
   fileSystems =
     (virtiofs "tagp"     "/mnt/tagp")
     // (virtiofs "karoline" "/mnt/karoline")
     // (virtiofs "media"  "/mnt/media")
-    // (virtiofs "games"  "/mnt/games")
-    // (bind "/mnt/tagp/photos" "/var/lib/immich/library/${labels.tagp}")
-    // (bind "/mnt/karoline/photos" "/var/lib/immich/library/${labels.karoline}");
+    // (virtiofs "games"  "/mnt/games");
 
   # Mirror the Debian default `games` user (uid 5 / gid 60) so file ownership
   # is consistent between home02 (via virtiofs) and what shows up in /mnt/games
@@ -48,21 +30,4 @@ in {
   };
   users.groups.games.gid = 60;
   users.users.tagp.extraGroups = [ "games" ];
-
-  systemd.tmpfiles.settings = {
-    "10-immich-library" = {
-      "/var/lib/immich".d = {
-        user = "immich"; group = "immich"; mode = "0750";
-      };
-      "/var/lib/immich/library".d = {
-        user = "immich"; group = "immich"; mode = "0750";
-      };
-      "/var/lib/immich/library/${labels.tagp}".d = {
-        user = "immich"; group = "immich"; mode = "0750";
-      };
-      "/var/lib/immich/library/${labels.karoline}".d = {
-        user = "immich"; group = "immich"; mode = "0750";
-      };
-    };
-  };
 }

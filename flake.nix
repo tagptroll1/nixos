@@ -102,6 +102,42 @@
         ];
       };
 
+      # Containers on home02. No home-manager on any of them - they run one job
+      # apiece and have no interactive user worth a home profile. `ocr` also
+      # needs no sops: it holds no credential at all.
+      #
+      # Each of the others decrypts only its own secrets, with its own age key
+      # (.sops.yaml), so taking one host yields nothing that unlocks another.
+      ocr = nixpkgs.lib.nixosSystem {
+        specialArgs = {
+          inherit inputs;
+          hostConfig = hosts.ocr;
+        };
+        modules = [ ./hosts/ocr ];
+      };
+
+      immich = nixpkgs.lib.nixosSystem {
+        specialArgs = {
+          inherit inputs;
+          hostConfig = hosts.immich;
+        };
+        modules = [
+          sops-nix.nixosModules.sops
+          ./hosts/immich
+        ];
+      };
+
+      share = nixpkgs.lib.nixosSystem {
+        specialArgs = {
+          inherit inputs;
+          hostConfig = hosts.share;
+        };
+        modules = [
+          sops-nix.nixosModules.sops
+          ./hosts/share
+        ];
+      };
+
       media = nixpkgs.lib.nixosSystem {
         specialArgs = {
           inherit inputs;

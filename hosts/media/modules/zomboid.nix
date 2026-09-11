@@ -76,11 +76,10 @@ let
   # shipped file steam restores on every app_update, so it is re-patched on each
   # start instead of edited by hand.
   #
-  # 6g out of the VM's 25 GB, because the heap is far from the only claim on it:
-  # two llama-server instances, immich, collabora and jellyfin want around 7 GB
-  # between them, and every page this JVM touches is also pinned on the Proxmox
-  # host for as long as the VM runs - the host has 31 GB and hands 26 of them to
-  # this VM. Stock is 8g and a 16-player server does not need more.
+  # 6g, because the heap is far from the only claim on this VM's memory:
+  # opencloud, collabora and the other game servers want several GB between
+  # them, and home02 sizes this VM against everything else it runs. Stock is 8g
+  # and a 16-player server does not need more.
   heapSize = "6g";
 
   # Sandbox rules. Anything omitted keeps its vanilla default, so this file only

@@ -3,7 +3,7 @@ let
   # Lives on the dedicated `games` virtiofs share (see storage.nix and
   # docs/private/proxmox-virtiofs-shares.md). Keeping cs2 off /mnt/media
   # avoids the systemd-tmpfiles "unsafe path transition" issue that triggers
-  # when crossing the immich-owned /mnt/media into game-server-owned subdirs.
+  # when crossing the shared /mnt/media into game-server-owned subdirs.
   cs2DataDir   = "/mnt/games/cs2-modded";
   cs2CustomDir = "/mnt/games/cs2-modded-custom";
 

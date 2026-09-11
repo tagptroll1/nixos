@@ -58,23 +58,6 @@
           respond 403
         '';
       in {
-      "immich.ybmn.no".extraConfig = ''
-        reverse_proxy 127.0.0.1:2283
-      '';
-      "jellyfin.ybmn.no".extraConfig = ''
-        reverse_proxy 127.0.0.1:8096
-      '';
-      # TODO: add `seer.ybmn.no` A/CNAME record in domeneshop before this
-      # vhost can serve traffic — Caddy will otherwise fail ACME DNS-01.
-      "seer.ybmn.no".extraConfig    = gated "127.0.0.1:5055";
-      "sonarr.ybmn.no".extraConfig   = gated "127.0.0.1:8989";
-      "radarr.ybmn.no".extraConfig   = gated "127.0.0.1:7878";
-      "prowlarr.ybmn.no".extraConfig = gated "127.0.0.1:9696";
-      "bazarr.ybmn.no".extraConfig   = gated "127.0.0.1:6767";
-      # qBittorrent lives in the wg netns; reachable at the namespace IP
-      # from the host. Confirm with `ip -n wg a` after first boot if 192.168.15.1
-      # ever drifts.
-      "qbit.ybmn.no".extraConfig     = gated "192.168.15.1:8080";
       "recipe.ybmn.no".extraConfig = gated "127.0.0.1:9925";
       "factorio.ybmn.no".extraConfig = gated "127.0.0.1:8090";
       "palworld.ybmn.no".extraConfig = gated "127.0.0.1:3939";
