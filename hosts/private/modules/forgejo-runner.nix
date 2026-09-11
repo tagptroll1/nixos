@@ -29,10 +29,20 @@ let
 		};
 	};
 in {
-	# media is the only host this runner deploys to besides its own, and it does
-	# it over ssh. Pinning the host key here means the workflow needs no
+	# ocr is the host this runner deploys to besides its own, and it does it
+	# over ssh. Pinning the host key here means the workflow needs no
 	# StrictHostKeyChecking=no and no known_hosts of its own: a machine-in-the-
 	# middle on the LAN cannot collect the deploy key.
+	#
+	# The address, not a name: private resolves through 8.8.8.8/1.1.1.1 and
+	# cannot resolve a split-DNS *.ybmn.no name, so the workflow's DEPLOY_HOST
+	# is the address and that is what has to match here.
+	programs.ssh.knownHosts.ocr = {
+		hostNames = [ "10.2.10.20" ];
+		publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKAVN9FoAohjtN15R/Eiavsr6AO+MVHDzq4VBx7VFuVk";
+	};
+
+	# media: kept from when financio-ocr ran there. Nothing deploys to it now.
 	programs.ssh.knownHosts.media = {
 		hostNames = [ "media.ybmn.no" "10.2.10.10" ];
 		publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIE6+o4gslXAItJJmoop4c6aR6A/urVH/qYslEDPZw47z";
@@ -86,7 +96,7 @@ in {
 			jq
 			systemd
 			pnpm
-			# financio-ocr ships its binary to media over ssh.
+			# financio-ocr ships its binary to ocr over ssh.
 			rsync
 		];
 
