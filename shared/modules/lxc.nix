@@ -42,4 +42,18 @@
 	# than a clear message, so this is a documented prerequisite for all of
 	# these hosts, not just the ones running podman.
 	nix.settings.sandbox = true;
+
+	# Deploys arrive as tagp over ssh - root login is off
+	# (shared/modules/sshd.nix), and the container's own root key is deleted by
+	# its first switch. nixos-rebuild elevates only the activation step: the
+	# closure is copied by `nix-copy-closure --to tagp@<host>` running
+	# unelevated, so the receiving daemon sees an untrusted user and refuses
+	# every locally built path for lacking a signature.
+	#
+	# Stated plainly because it is not a small grant: a trusted Nix user can
+	# hand the daemon arbitrary store paths, which is root-equivalent in
+	# practice. It is the same reach the deploy already has through sudo on the
+	# activation, so this widens what can be *deployed from*, not what an
+	# attacker reaching this container can do.
+	nix.settings.trusted-users = [ "root" "tagp" ];
 }
