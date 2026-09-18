@@ -33,6 +33,8 @@ let
 		8211  # Palworld → media
 		16261 # Zomboid handshake/game → media
 		16262 # Zomboid direct-connect → media
+		2456  # Valheim game → media (2457, the steam query port, is
+		      # only bound when the server runs -public 1)
 	];
 	entryPoint = proto: port:
 		lib.nameValuePair "${proto}-${toString port}"

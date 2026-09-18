@@ -28,6 +28,7 @@
     ./modules/factorio.nix
     ./modules/palworld.nix
     ./modules/zomboid.nix
+    ./modules/valheim.nix
     ./modules/mealie.nix
     ./modules/opencloud.nix
   ];
@@ -35,6 +36,7 @@
   myServices.palworld.enable = false;
   myServices.factorio-server.enable = false;
   myServices.zomboid.enable = true;
+  myServices.valheim.enable = true;
 
   sops.age.keyFile = "/etc/age/host.key";
   sops.secrets = {
@@ -94,6 +96,10 @@
     "zomboid/rcon_pw" = {
       sopsFile = ./secrets/zomboidSecret.yaml;
       key = "rcon_pw";
+    };
+    "valheim/server_pw" = {
+      sopsFile = ./secrets/valheimSecret.yaml;
+      key = "server_pw";
     };
   };
 

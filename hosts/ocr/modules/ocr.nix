@@ -336,6 +336,7 @@ in
 
     environment = {
       OCR_PORT = toString port;
+      OCR_DIAGNOSTIC_DIR = "/run/financio-ocr-diagnostics";
       # Reachable from private, which is the whole point of it living here. The
       # firewall rule below is what narrows that to one address.
       OCR_BIND_ADDR = "0.0.0.0";
@@ -418,9 +419,9 @@ in
       Restart = "on-failure";
       RestartSec = 5;
 
-      # Stateless by design: it writes nothing and remembers nothing between
-      # requests, because financio owns every image and every result. So it
-      # gets no state directory and no writable path at all.
+      # Private diagnostics retain only the latest truncated OCR response until stop or reboot.
+      RuntimeDirectory = "financio-ocr-diagnostics";
+      RuntimeDirectoryMode = "0700";
       DynamicUser = true;
       ProtectSystem = "strict";
       ProtectHome = true;
