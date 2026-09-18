@@ -265,6 +265,16 @@ in
       # Where the steamworks game server library looks for steamclient.so.
       # Without it the server falls back to the copy in its install directory
       # and only half initialises steam.
+      # Declared explicitly, not left to be created as a parent of sdk64:
+      # tmpfiles makes missing parents root-owned, and then refuses to descend
+      # from a games-owned directory into a root-owned one ("unsafe path
+      # transition"), which drops the sdk64 rule and the symlink below with it.
+      # steamcmd also puts its own .steam/root symlink here and runs as games.
+      "${zomboidRoot}/.steam".d = {
+        user = "games";
+        group = "games";
+        mode = "0750";
+      };
       "${zomboidRoot}/.steam/sdk64".d = {
         user = "games";
         group = "games";
