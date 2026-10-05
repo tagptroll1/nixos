@@ -25,6 +25,7 @@
 		./modules/restic.nix
 		./modules/forgejo-runner.nix
 		./modules/financio.nix
+		./modules/mail-health.nix
 	];
 	# set with e2label / mkfs.ext4 -L vmdata
 	fileSystems."/mnt/data" = {
@@ -65,6 +66,12 @@
 			sopsFile = ./secrets/financioSecret.yaml;
 			key = "env";
 			owner = "financio";
+		};
+		# Discord webhook URL that modules/mail-health.nix posts to. Read by
+		# PID 1 through LoadCredential, so it stays root-only.
+		"discord/mail_webhook" = {
+			sopsFile = ./secrets/discordSecret.yaml;
+			key = "mail_webhook";
 		};
 		"forgejo/runner_token" = {
 			sopsFile = ./secrets/forgejoSecret.yaml;

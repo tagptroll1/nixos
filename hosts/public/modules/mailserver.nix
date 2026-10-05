@@ -81,6 +81,46 @@
     };
   };
 
+  # rspamd's proxy worker can crash-loop (segfault on map refresh) while the
+  # main process stays up, so the unit still reads active. Postfix consults the
+  # milter before it greets, so every connection then waits out the milter
+  # timeout and gets a 421. No 220 greeting on loopback means rspamd is wedged;
+  # a restart clears it.
+  systemd.services."rspamd-heal" = {
+    description = "Restart rspamd when postfix stops greeting";
+    serviceConfig.Type = "oneshot";
+    path = [ pkgs.bash ];
+    script = ''
+      greeting() {
+        timeout 20 bash -c 'exec 3<>/dev/tcp/127.0.0.1/25 && head -c 3 <&3' 2>/dev/null || true
+      }
+
+      if [ "$(greeting)" = "220" ]; then
+        exit 0
+      fi
+
+      echo "No SMTP greeting on 127.0.0.1:25, restarting rspamd"
+      systemctl restart rspamd
+      sleep 15
+
+      if [ "$(greeting)" != "220" ]; then
+        echo "Still no SMTP greeting after restarting rspamd"
+        exit 1
+      fi
+      echo "SMTP greeting is back after restarting rspamd"
+    '';
+  };
+
+  systemd.timers."rspamd-heal" = {
+    description = "Check postfix greets every 5 minutes, restart rspamd if not";
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnBootSec = "10min";
+      OnUnitActiveSec = "5min";
+      Unit = "rspamd-heal.service";
+    };
+  };
+
   # ACME cert for the mail server via Domeneshop DNS-01
   security.acme = {
     acceptTerms = true;
