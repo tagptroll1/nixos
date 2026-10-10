@@ -34,7 +34,7 @@ in {
 
     virtualHosts."immich.ybmn.no".extraConfig = ''
       ${snippets.tlsDomeneshop}
-      @trusted client_ip 192.168.0.0/24 192.168.54.0/24 10.0.0.0/24 100.64.0.0/10 127.0.0.1/8
+      @trusted client_ip 192.168.0.0/24 192.168.54.0/24 10.0.0.0/24 10.2.10.10/32 127.0.0.1/8
       handle @trusted {
         reverse_proxy 127.0.0.1:2283
       }
@@ -43,9 +43,12 @@ in {
   };
 
   # A matcher rather than lib/caddy.nix's `lanOnly`, because the phone syncs
-  # over the tailnet as well as the LAN and needs 100.64.0.0/10. Deliberately
-  # absent: 10.2.10.0/24 and 10.2.30.0/24 - no container has business reaching
-  # this UI, and the share container talks to the API on 2283 instead.
+  # over the tailnet as well as the LAN. Tailnet traffic arrives through the
+  # media VM's subnet router, which SNATs it, so it shows up here as
+  # 10.2.10.10 rather than a 100.64.0.0/10 address - hence that one /32.
+  # Deliberately absent: the rest of 10.2.10.0/24 and 10.2.30.0/24 - no
+  # container has business reaching this UI, and the share container talks to
+  # the API on 2283 instead.
 
   networking.firewall.allowedTCPPorts = [ 80 443 ];
 
