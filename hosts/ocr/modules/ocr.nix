@@ -419,6 +419,16 @@ in
       Restart = "on-failure";
       RestartSec = 5;
 
+      # ANTHROPIC_API_KEY, from sops (../default.nix). With it, a receipt
+      # carrying more rows of text in one image than the local model can keep
+      # apart is sent to Claude instead of the card, and that receipt's
+      # photographs leave this host - the only thing here that does.
+      #
+      # The `-` keeps a missing file non-fatal, and missing is a supported
+      # state: no key means the unit starts as it always has and every receipt
+      # is read locally.
+      EnvironmentFile = "-/run/secrets/financio-ocr/env";
+
       # Private diagnostics retain only the latest truncated OCR response until stop or reboot.
       RuntimeDirectory = "financio-ocr-diagnostics";
       RuntimeDirectoryMode = "0700";
