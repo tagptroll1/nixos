@@ -62,7 +62,7 @@ Nix config for the new host is written and dry-run verified (`hosts/pangolin/`).
       new box — keep the gap short.
 - [x] Domeneshop: point the `91.99.59.171` records at `193.200.238.206`
       (newt clients on public/media reconnect on their own).
-- [ ] PTR broken — Gigahost support ticket. Panel appends an extra `.206`
+- [x] PTR broken — Gigahost support ticket. Panel appends an extra `.206`
       label, so the record sits at `206.206.238.200.193.in-addr.arpa` instead
       of the zone apex `206.238.200.193.in-addr.arpa`; empty and `@` host are
       rejected, so the apex record cannot be created in the panel. Ask them to

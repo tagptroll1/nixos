@@ -419,10 +419,10 @@ in
       Restart = "on-failure";
       RestartSec = 5;
 
-      # ANTHROPIC_API_KEY, from sops (../default.nix). With it, a receipt
-      # carrying more rows of text in one image than the local model can keep
-      # apart is sent to Claude instead of the card, and that receipt's
-      # photographs leave this host - the only thing here that does.
+      # ANTHROPIC_API_KEY, from sops (../default.nix). With it, a receipt too
+      # long for the local model - by the look of it, or by a local reading
+      # that does not add up - is sent to Claude instead of the card, and that
+      # receipt's photographs leave this host. Nothing else here does.
       #
       # The `-` keeps a missing file non-fatal, and missing is a supported
       # state: no key means the unit starts as it always has and every receipt

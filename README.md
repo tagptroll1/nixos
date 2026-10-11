@@ -39,6 +39,30 @@ use convenience tools like ssh-to-age key conversion. Which is also one of the r
 proton-pass-cli nix package wrapper in the config. This should give me quicker access to the age secret whenever setting up a new machine.
 
 
+## Deploying
+### VMs
+Rebuilt on the machine itself, from its own checkout of this repo:
+
+```bash
+sudo nixos-rebuild switch --flake ~/nixos#<host>
+```
+
+### LXC containers
+The containers (`ocr`, `immich`, `share` - every host that imports `shared/modules/lxc.nix`) are built on my desktop
+and pushed over ssh. `<ip>` is the host's `ip` in `lib/hosts.nix`.
+
+```bash
+NIX_SSHOPTS="-i $HOME/.ssh/desktop -o IdentitiesOnly=yes" \
+  nixos-rebuild switch --flake path:/mnt/bigboi/dev/nix/nixos#<host> \
+  --target-host tagp@<ip> --sudo --ask-sudo-password --no-reexec
+```
+
+In fish, put `env` in front of `NIX_SSHOPTS=...`.
+
+- `path:` builds the working tree as it is, uncommitted changes included.
+- `--sudo --ask-sudo-password` asks for tagp's sudo password on the container, used for the activation step only.
+
+
 ## Services running on the machines
 ### Private
 - Uptime Kuma
