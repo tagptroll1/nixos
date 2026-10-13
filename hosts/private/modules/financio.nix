@@ -50,10 +50,14 @@ let
   # upload returns 503 without it - and the debit/credit split depends on its
   # -bbox-layout x-coordinates, so re-parse a known statement after a nixpkgs
   # bump that moves poppler.
+  #
+  # ffmpeg is what a screen recording of a receipt is decoded with
+  # (skjermopptak). Without it that upload returns 503 ffmpeg_missing and
+  # everything else works. Headless: nothing here draws to a screen.
   common = {
     inherit environment;
 
-    path = [ pkgs.poppler-utils ];
+    path = [ pkgs.poppler-utils pkgs.ffmpeg-headless ];
 
     serviceConfig = {
       User = "financio";
