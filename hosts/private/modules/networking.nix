@@ -4,7 +4,7 @@ let
   # The LAN allowlist and the domeneshop tls block moved to lib/caddy.nix so the
   # generated app vhosts in modules/apps.nix use the same ones. Changing the
   # allowlist there changes it for both.
-  inherit (import ../../../lib/caddy.nix) lanOnly;
+  inherit (import ../../../lib/caddy.nix) lanOnly tlsDomeneshop;
   # Network hierarchy: VMs (private/public) must NOT reach 10.0.0.x (Server subnet).
   # Grafana (10.0.0.5) and Proxmox (10.0.0.69) are accessed directly from LAN —
   # not proxied through Caddy here.
@@ -129,6 +129,19 @@ in {
             '';
           };
           "www.tools.ybmn.no".extraConfig = "redir https://tools.ybmn.no{uri} permanent";
+
+          # Workout sheet: one static page from ../sites/mova, LAN + tailnet
+          # only. Set ticks live in the browser's localStorage, nothing
+          # server-side. No www alias, same reason as git.ybmn.no.
+          "mova.ybmn.no".extraConfig = ''
+            @lan remote_ip 192.168.0.0/24 192.168.54.0/24 10.0.0.0/24
+            handle @lan {
+              root * ${../sites/mova}
+              file_server
+            }
+            respond "Access denied" 403
+            ${tlsDomeneshop}
+          '';
 
         }
       ;
