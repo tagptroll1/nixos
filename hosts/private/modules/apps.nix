@@ -253,7 +253,7 @@ in {
 					(if a.lanOnly
 					 then caddyLib.lanOnly "127.0.0.1:${toString a.port}"
 					 else "reverse_proxy 127.0.0.1:${toString a.port}")
-					+ caddyLib.tlsDomeneshop;
+					+ caddyLib.tlsGigahost;
 			}) withDomain;
 
 		# 0400 and root-owned: containers are rootful here, so podman reads it

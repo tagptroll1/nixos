@@ -48,9 +48,11 @@
       sopsFile = ./secrets/opencloudSecret.yaml;
       key = "collabora_env";
     };
-    "caddy/domeneshop_token" = {
+    # Dotenv for Caddy's EnvironmentFile: GIGAHOST_API_KEY=flux_live_..., a
+    # Gigahost API key limited to DNS read-write.
+    "caddy/gigahost_env" = {
       sopsFile = ./secrets/caddySecret.yaml;
-      key = "token";
+      key = "gigahost_env";
       owner = "caddy";
     };
     "newt-id-media" = {

@@ -13,10 +13,10 @@ in {
 		defaults.email = "admin@yesbutmaybe.no";
 
 		certs.${fqdn} = {
-			dnsProvider = "domeneshop";
+			dnsProvider = "gigahostno";
 			credentialFiles = {
-				"DOMENESHOP_API_TOKEN_FILE" = config.sops.secrets."domeneshop_api_token".path;
-				"DOMENESHOP_API_SECRET_FILE" = config.sops.secrets."domeneshop_api_secret".path;
+				"GIGAHOSTNO_USERNAME_FILE" = config.sops.secrets."gigahost_username".path;
+				"GIGAHOSTNO_PASSWORD_FILE" = config.sops.secrets."gigahost_password".path;
 			};
 		};
 	};

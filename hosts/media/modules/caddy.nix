@@ -1,23 +1,12 @@
-{ config, pkgs, ... }: {
+{ config, pkgs, ... }:
+let
+  inherit (import ../../../lib/caddy.nix) acmeDnsGigahost gigahostPlugin;
+in {
   services.caddy = {
     enable = true;
-    package = pkgs.caddy.withPlugins {
-      plugins = [
-        "github.com/tagptroll1/caddy-dns-domeneshop@v0.1.8"
-      ];
-      # v0.1.8: fix returned Record.Name to stay relative to the caller's
-      # zone (don't rewrite to FQDN). certmagic's propagation check was
-      # AbsoluteName()-ing it again, producing _acme-challenge.X.ybmn.no.ybmn.no
-      # and looping with `last error: <nil>` until timeout.
-      hash = "sha256-UzaVuw0C9G+J+d/KWbQJYjh/e3ADhIqxmomNUSOtcO8=";
-    };
+    package = pkgs.caddy.withPlugins gigahostPlugin;
 
-    globalConfig = ''
-      acme_dns domeneshop {
-        token  {env.DOMENESHOP_API_TOKEN}
-        secret {env.DOMENESHOP_API_SECRET}
-      }
-    '';
+    globalConfig = acmeDnsGigahost;
 
     virtualHosts =
       let
@@ -32,19 +21,18 @@
         trustedMatcher = ''
           @trusted client_ip 10.2.0.0/24 10.2.10.0/24 192.168.0.0/24 100.64.0.0/10 127.0.0.1/8 10.89.0.0/16
         '';
-        # Query the zone's authoritative nameservers (hyp.net) directly for
-        # the DNS-01 propagation check. Public anycast resolvers like
+        # Query the zone's authoritative nameservers (ns1/ns2/ns3.gigahost.no)
+        # directly for the DNS-01 propagation check. Public anycast resolvers like
         # 1.1.1.1 have inconsistent cache state across POPs — the TXT
         # appears and disappears between polls, so Caddy never confirms
         # propagation and times out with `last error: <nil>`. Authoritative
         # servers always reflect the source of truth.
         tlsBlock = ''
           tls {
-            dns domeneshop {
-              token  {env.DOMENESHOP_API_TOKEN}
-              secret {env.DOMENESHOP_API_SECRET}
+            dns gigahost {
+              api_key {env.GIGAHOST_API_KEY}
             }
-            resolvers 151.249.124.1 192.174.68.10 151.249.126.3
+            resolvers 193.200.229.71 185.125.171.136 45.88.200.23
             propagation_delay 30s
             propagation_timeout 5m
           }
@@ -73,6 +61,6 @@
   };
 
   systemd.services.caddy.serviceConfig = {
-    EnvironmentFile = config.sops.secrets."caddy/domeneshop_token".path;
+    EnvironmentFile = config.sops.secrets."caddy/gigahost_env".path;
   };
 }

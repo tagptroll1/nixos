@@ -121,17 +121,17 @@
     };
   };
 
-  # ACME cert for the mail server via Domeneshop DNS-01
+  # ACME cert for the mail server via Gigahost DNS-01
   security.acme = {
     acceptTerms = true;
     defaults.email = "admin@yesbutmaybe.no";
 
     certs."mail.yesbutmaybe.no" = {
       domain = "mail.yesbutmaybe.no";
-      dnsProvider = "domeneshop";
+      dnsProvider = "gigahostno";
       credentialFiles = {
-        "DOMENESHOP_API_TOKEN_FILE" = config.sops.secrets."domeneshop_api_token".path;
-        "DOMENESHOP_API_SECRET_FILE" = config.sops.secrets."domeneshop_api_secret".path;
+        "GIGAHOSTNO_USERNAME_FILE" = config.sops.secrets."gigahost_username".path;
+        "GIGAHOSTNO_PASSWORD_FILE" = config.sops.secrets."gigahost_password".path;
       };
     };
   };

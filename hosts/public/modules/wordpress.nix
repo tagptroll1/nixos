@@ -206,10 +206,10 @@ in
 	# ACME cert for the WordPress admin panel
 	security.acme.certs."admin.sletteposten.no" = {
 		domain = "admin.sletteposten.no";
-		dnsProvider = "domeneshop";
+		dnsProvider = "gigahostno";
 		credentialFiles = {
-			"DOMENESHOP_API_TOKEN_FILE" = config.sops.secrets."domeneshop_api_token".path;
-			"DOMENESHOP_API_SECRET_FILE" = config.sops.secrets."domeneshop_api_secret".path;
+			"GIGAHOSTNO_USERNAME_FILE" = config.sops.secrets."gigahost_username".path;
+			"GIGAHOSTNO_PASSWORD_FILE" = config.sops.secrets."gigahost_password".path;
 		};
 		# Owned by nginx directly, so nginx needs no membership in the acme group.
 		# Group membership there would also grant read on mail.yesbutmaybe.no's

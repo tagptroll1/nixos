@@ -46,8 +46,11 @@ in
 		};
 		"newt-id" = {};
 		"newt-secret" = {};
-		"domeneshop_api_token" = {};
-		"domeneshop_api_secret" = {};
+		# Gigahost login lego uses for DNS-01 (gigahostno provider). A user
+		# contact limited to DNS, not the account admin: lego 4.x has no API-key
+		# option for Gigahost, so this login is the credential.
+		"gigahost_username" = {};
+		"gigahost_password" = {};
 		"github_token" = {};
 		# Plaintext SMTP password for post@byggogbedrag.no, used by the
 		# SvelteKit site to authenticate to the local mailserver. Format: SMTP_PASS=...

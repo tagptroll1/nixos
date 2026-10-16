@@ -15,25 +15,14 @@ in {
   services.caddy = {
     enable = true;
 
-    # The domeneshop DNS-01 provider, pinned to the version the rest of the
-    # estate uses: v0.1.8 keeps the returned Record.Name relative to the
-    # caller's zone, where earlier versions rewrote it to an FQDN and certmagic
-    # then absolutised it again, producing _acme-challenge.X.ybmn.no.ybmn.no
-    # and looping until timeout.
-    package = pkgs.caddy.withPlugins {
-      plugins = [ "github.com/tagptroll1/caddy-dns-domeneshop@v0.1.8" ];
-      hash = "sha256-UzaVuw0C9G+J+d/KWbQJYjh/e3ADhIqxmomNUSOtcO8=";
-    };
+    # The gigahost DNS-01 provider, pinned in lib/caddy.nix to the version the
+    # rest of the estate uses.
+    package = pkgs.caddy.withPlugins snippets.gigahostPlugin;
 
-    globalConfig = ''
-      acme_dns domeneshop {
-        token  {env.DOMENESHOP_API_TOKEN}
-        secret {env.DOMENESHOP_API_SECRET}
-      }
-    '';
+    globalConfig = snippets.acmeDnsGigahost;
 
     virtualHosts."immich.ybmn.no".extraConfig = ''
-      ${snippets.tlsDomeneshop}
+      ${snippets.tlsGigahost}
       @trusted client_ip 192.168.0.0/24 192.168.54.0/24 10.0.0.0/24 10.2.10.10/32 127.0.0.1/8
       handle @trusted {
         reverse_proxy 127.0.0.1:2283
@@ -53,5 +42,5 @@ in {
   networking.firewall.allowedTCPPorts = [ 80 443 ];
 
   systemd.services.caddy.serviceConfig.EnvironmentFile =
-    config.sops.secrets."caddy/domeneshop_token".path;
+    config.sops.secrets."caddy/gigahost_env".path;
 }

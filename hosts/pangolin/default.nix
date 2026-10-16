@@ -24,9 +24,10 @@
 		# Pangolin's server.secret; must match the sqlite db in
 		# /var/lib/pangolin/config/.
 		"pangolin-server-secret" = {};
-		# Domeneshop API credentials for the relay.yesbutmaybe.no ACME cert
-		# (DNS-01, since traefik owns port 80).
-		"domeneshop_api_token" = {};
-		"domeneshop_api_secret" = {};
+		# Gigahost login for the relay.yesbutmaybe.no ACME cert (DNS-01, since
+		# traefik owns port 80). A user contact limited to DNS, not the account
+		# admin: lego 4.x has no API-key option for Gigahost.
+		"gigahost_username" = {};
+		"gigahost_password" = {};
 	};
 }

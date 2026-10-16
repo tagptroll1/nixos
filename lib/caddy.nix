@@ -21,21 +21,38 @@
 		respond "Access denied" 403
 	'';
 
-	# DNS-01 through the domeneshop plugin, with the propagation waits a new
-	# name needs.
+	# DNS-01 through the gigahost plugin (github.com/tagptroll1/caddy-dns-gigahost),
+	# with the propagation waits a new name needs.
 	#
-	# Domeneshop spreads records across ns1/ns2/ns3.hyp.net slower than Caddy's
-	# default zero delay, so Let's Encrypt's secondary validation reads a stale
-	# challenge TXT and fails. This cost `git.ybmn.no` its first issuance. Any
-	# vhost for a name that has never had a certificate wants this block.
-	tlsDomeneshop = ''
+	# A fresh challenge TXT has to reach all of ns1/ns2/ns3.gigahost.no before
+	# Let's Encrypt validates, and its secondary validation asks from several
+	# vantage points. With Caddy's default zero delay one of them can read a
+	# stale answer and fail the order. Any vhost for a name that has never had a
+	# certificate wants this block.
+	#
+	# GIGAHOST_API_KEY comes from the host's caddy/gigahost_env secret.
+	tlsGigahost = ''
 		tls {
-			dns domeneshop {
-				token  {env.DOMENESHOP_API_TOKEN}
-				secret {env.DOMENESHOP_API_SECRET}
+			dns gigahost {
+				api_key {env.GIGAHOST_API_KEY}
 			}
 			propagation_delay   2m
 			propagation_timeout 5m
 		}
 	'';
+
+	# The global default issuer config, for names whose vhost has no tls block.
+	acmeDnsGigahost = ''
+		acme_dns gigahost {
+			api_key {env.GIGAHOST_API_KEY}
+		}
+	'';
+
+	# Plugin pin shared by every Caddy host, so a fix lands everywhere at once.
+	# The hash is the fixed-output hash of the built Caddy; leave it "" when the
+	# version changes, rebuild, and paste the `got: sha256-...` it prints.
+	gigahostPlugin = {
+		plugins = [ "github.com/tagptroll1/caddy-dns-gigahost@v0.1.0" ];
+		hash = "";
+	};
 }

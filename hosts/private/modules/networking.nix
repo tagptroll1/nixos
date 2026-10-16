@@ -1,10 +1,11 @@
 { config, pkgs, hostConfig, ... }:
 let
   inherit (pkgs) it-tools;
-  # The LAN allowlist and the domeneshop tls block moved to lib/caddy.nix so the
-  # generated app vhosts in modules/apps.nix use the same ones. Changing the
-  # allowlist there changes it for both.
-  inherit (import ../../../lib/caddy.nix) lanOnly tlsDomeneshop;
+  # The LAN allowlist, the DNS-01 tls block and the plugin pin live in
+  # lib/caddy.nix so the generated app vhosts in modules/apps.nix and the other
+  # Caddy hosts use the same ones. Changing the allowlist there changes it for
+  # all of them.
+  inherit (import ../../../lib/caddy.nix) lanOnly tlsGigahost acmeDnsGigahost gigahostPlugin;
   # Network hierarchy: VMs (private/public) must NOT reach 10.0.0.x (Server subnet).
   # Grafana (10.0.0.5) and Proxmox (10.0.0.69) are accessed directly from LAN —
   # not proxied through Caddy here.
@@ -28,22 +29,9 @@ in {
 
   services.caddy = {
     enable = true;
-    package = pkgs.caddy.withPlugins {
-      plugins = [
-        "github.com/tagptroll1/caddy-dns-domeneshop@v0.1.3"
-      ];
-      # Leave as "" for first build — it will fail and print:
-      #   got: sha256-<hash>
-      # Paste that value here and rebuild.
-      hash = "sha256-5VQutkG0mvg/eVP/fgZsWdLVSuA4JDnrhJMD4ig8Obc=";
-    };
+    package = pkgs.caddy.withPlugins gigahostPlugin;
 
-    globalConfig = ''
-      acme_dns domeneshop {
-        token  {env.DOMENESHOP_API_TOKEN}
-        secret {env.DOMENESHOP_API_SECRET}
-      }
-    '';
+    globalConfig = acmeDnsGigahost;
 
     virtualHosts =
       let
@@ -77,20 +65,10 @@ in {
 
           # Web UI only — git-over-ssh goes straight to port 2222, not via Caddy.
           # No www alias: nobody types www.git, and it doubles the certificates
-          # to obtain. Domeneshop spreads records across ns1/ns2/ns3.hyp.net
-          # slower than Caddy's default zero delay, so Let's Encrypt's secondary
-          # validation read a stale challenge TXT and failed. Wait for the record
-          # to settle before asking for validation.
+          # to obtain.
           "git.ybmn.no".extraConfig = ''
             ${lanOnly "127.0.0.1:3000"}
-            tls {
-              dns domeneshop {
-                token  {env.DOMENESHOP_API_TOKEN}
-                secret {env.DOMENESHOP_API_SECRET}
-              }
-              propagation_delay   2m
-              propagation_timeout 5m
-            }
+            ${tlsGigahost}
           '';
 
 
@@ -98,20 +76,11 @@ in {
           # one SQLite file per user, so this is the outer fence rather than the
           # only one - /api/health is the sole route it serves unauthenticated.
           #
-          # New name, so first issuance hits the same slow domeneshop
-          # propagation git.ybmn.no did - wait for the TXT record to settle
-          # before asking for validation. No www alias, for the reason above it:
-          # nobody types www.bank, and it doubles the certificates.
+          # No www alias, for the reason above it: nobody types www.bank, and it
+          # doubles the certificates.
           "bank.ybmn.no".extraConfig = ''
             ${lanOnly "127.0.0.1:8086"}
-            tls {
-              dns domeneshop {
-                token  {env.DOMENESHOP_API_TOKEN}
-                secret {env.DOMENESHOP_API_SECRET}
-              }
-              propagation_delay   2m
-              propagation_timeout 5m
-            }
+            ${tlsGigahost}
           '';
 
           "change.ybmn.no".extraConfig    = lanOnly "127.0.0.1:5000";
@@ -140,7 +109,7 @@ in {
               file_server
             }
             respond "Access denied" 403
-            ${tlsDomeneshop}
+            ${tlsGigahost}
           '';
 
         }
@@ -148,6 +117,6 @@ in {
   };
 
   systemd.services.caddy.serviceConfig = {
-    EnvironmentFile = config.sops.secrets."caddy/domeneshop_token".path;
+    EnvironmentFile = config.sops.secrets."caddy/gigahost_env".path;
   };
 }
