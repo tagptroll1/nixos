@@ -24,10 +24,8 @@
 		# Pangolin's server.secret; must match the sqlite db in
 		# /var/lib/pangolin/config/.
 		"pangolin-server-secret" = {};
-		# Gigahost login for the relay.yesbutmaybe.no ACME cert (DNS-01, since
-		# traefik owns port 80). A user contact limited to DNS, not the account
-		# admin: lego 4.x has no API-key option for Gigahost.
-		"gigahost_username" = {};
-		"gigahost_password" = {};
+		# Gigahost API key (flux_live_...) for the relay.yesbutmaybe.no ACME
+		# cert (DNS-01, since traefik owns port 80). Needs DNS read-write only.
+		"gigahost_api_key" = {};
 	};
 }

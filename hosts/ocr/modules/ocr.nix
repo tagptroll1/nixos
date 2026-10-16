@@ -75,6 +75,12 @@ let
   # package finds the card and cannot use it. Building the one architecture
   # also keeps the compile small, which matters because anything CUDA is
   # unfree and therefore never in the binary cache - this host compiles it.
+  #
+  # CUDA itself is pinned to the 12.x line. CUDA 13 dropped Pascal, so its
+  # backendStdenv rejects capability 6.1 outright; 12.9 is the last release
+  # that still builds for this card. The overlay swaps the default
+  # cudaPackages for the whole instance, so nothing llama-cpp pulls in can
+  # bring CUDA 13 back.
   llamaCpp =
     (import inputs.nixpkgs {
       inherit (pkgs.stdenv.hostPlatform) system;
@@ -83,6 +89,7 @@ let
         cudaSupport = true;
         cudaCapabilities = [ "6.1" ];
       };
+      overlays = [ (final: prev: { cudaPackages = final.cudaPackages_12; }) ];
     }).llama-cpp;
 
   # The runner's whole vocabulary on this host. Its key is bound to this script

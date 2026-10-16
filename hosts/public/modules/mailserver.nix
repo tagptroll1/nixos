@@ -130,8 +130,7 @@
       domain = "mail.yesbutmaybe.no";
       dnsProvider = "gigahostno";
       credentialFiles = {
-        "GIGAHOSTNO_USERNAME_FILE" = config.sops.secrets."gigahost_username".path;
-        "GIGAHOSTNO_PASSWORD_FILE" = config.sops.secrets."gigahost_password".path;
+        "GIGAHOSTNO_API_KEY_FILE" = config.sops.secrets."gigahost_api_key".path;
       };
     };
   };

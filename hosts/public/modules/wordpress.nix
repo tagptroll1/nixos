@@ -208,8 +208,7 @@ in
 		domain = "admin.sletteposten.no";
 		dnsProvider = "gigahostno";
 		credentialFiles = {
-			"GIGAHOSTNO_USERNAME_FILE" = config.sops.secrets."gigahost_username".path;
-			"GIGAHOSTNO_PASSWORD_FILE" = config.sops.secrets."gigahost_password".path;
+			"GIGAHOSTNO_API_KEY_FILE" = config.sops.secrets."gigahost_api_key".path;
 		};
 		# Owned by nginx directly, so nginx needs no membership in the acme group.
 		# Group membership there would also grant read on mail.yesbutmaybe.no's

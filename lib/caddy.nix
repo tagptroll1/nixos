@@ -52,7 +52,7 @@
 	# The hash is the fixed-output hash of the built Caddy; leave it "" when the
 	# version changes, rebuild, and paste the `got: sha256-...` it prints.
 	gigahostPlugin = {
-		plugins = [ "github.com/tagptroll1/caddy-dns-gigahost@v0.1.0" ];
-		hash = "";
+		plugins = [ "github.com/tagptroll1/caddy-dns-gigahost@v0.1.1" ];
+		hash = "sha256-vq4GV2/DxKJkJ8q6z9Xvp2xMpWvScnKKFMfcNOMXe+c=";
 	};
 }
