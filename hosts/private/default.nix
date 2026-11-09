@@ -69,6 +69,13 @@
 			key = "env";
 			owner = "financio";
 		};
+		# Dotenv for homepage: HOMEPAGE_VAR_PVE_TOKEN=homepage@pve!dash=<uuid>, a
+		# PVEAuditor token on /storage only. Read by systemd as root through
+		# EnvironmentFile, so it stays root-only.
+		"homepage/env" = {
+			sopsFile = ./secrets/homepageSecret.yaml;
+			key = "env";
+		};
 		# Discord webhook URL that modules/mail-health.nix posts to. Read by
 		# PID 1 through LoadCredential, so it stays root-only.
 		"discord/mail_webhook" = {
