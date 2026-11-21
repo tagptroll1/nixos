@@ -156,7 +156,7 @@ ssh_key: |
 
 ### 4. DNS
 
-Domeneshop: CNAME `git` → `private.ybmn.no.`, the same shape as `status` and
+Gigahost: CNAME `git` → `private.ybmn.no.`, the same shape as `status` and
 `file`. The tailscale split DNS covers off-LAN access with no extra config.
 
 ### 5. Rebuild

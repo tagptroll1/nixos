@@ -39,7 +39,7 @@ No home02 changes: the `games` virtiofs share (`/mnt/games`) is already wired fo
 
 ## Manual steps (after rebuild)
 
-1. Add DNS record `factorio.ybmn.no` in domeneshop (same target as other `*.ybmn.no`).
+1. Add DNS record `factorio.ybmn.no` in Gigahost (same target as other `*.ybmn.no`).
 2. Rebuild both hosts:
    - on media:    `sudo nixos-rebuild switch --flake ~/nixos#media`
    - on pangolin: `sudo nixos-rebuild switch --flake ~/nixos#pangolin`

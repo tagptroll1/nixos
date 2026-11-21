@@ -82,8 +82,8 @@ More to come..
 
 ## TODO:
 - Write down every manual task done outside of the nixos configuration
-    - Domeneshop DNS Records
-    - Domeneshop API Keys
+    - Gigahost DNS Records
+    - Gigahost API Keys
     - Gigahost panel (PTR record for the pangolin VPS)
     - Age public key in .sops.yaml (on my machine)
 - Install other cool services

@@ -76,7 +76,7 @@ Options are documented in the module itself. The ones worth knowing:
 
 Then things nix cannot do for you:
 
-1. **DNS.** A record for `<name>.ybmn.no` in domeneshop. Or, once you are tired
+1. **DNS.** A record for `<name>.ybmn.no` in Gigahost. Or, once you are tired
    of this, one `*.ybmn.no` wildcard record and a wildcard certificate — that
    also retires the slow-propagation dance below.
 2. **The image.** A workflow in the app's repo that builds and pushes to

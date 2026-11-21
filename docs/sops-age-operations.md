@@ -116,7 +116,7 @@ Edit the relevant `creation_rules` entry to include both anchors, then **re-key*
 sops updatekeys hosts/source/secrets/foo.yaml
 ```
 
-(a) is what we did for the Domeneshop token (private → media).
+(a) is what we did for the Gigahost key (private → media).
 
 ### Rotate a host's age key (compromised, lost, etc.)
 
@@ -147,18 +147,18 @@ SOPS_AGE_KEY_FILE=/etc/age/host.key sops -d /path/to/secret.yaml
 
 In `hosts/<host>/default.nix` (or any imported module):
 ```nix
-sops.secrets."caddy/domeneshop_token" = {
+sops.secrets."caddy/gigahost_env" = {
   sopsFile = ./secrets/caddySecret.yaml;
-  key = "token";
+  key = "gigahost_env";
   owner = "caddy";
 };
 ```
 Then in the service:
 ```nix
 services.caddy.serviceConfig.EnvironmentFile =
-  config.sops.secrets."caddy/domeneshop_token".path;
+  config.sops.secrets."caddy/gigahost_env".path;
 ```
-Path resolves at runtime to `/run/secrets/caddy/domeneshop_token` (a tmpfs file owned by `caddy`).
+Path resolves at runtime to `/run/secrets/caddy/gigahost_env` (a tmpfs file owned by `caddy`).
 
 ## Troubleshooting
 
