@@ -34,9 +34,9 @@
   ];
 
   myServices.palworld.enable = false;
-  myServices.factorio-server.enable = false;
-  myServices.zomboid.enable = true;
-  myServices.valheim.enable = true;
+  myServices.factorio-server.enable = true;
+  myServices.zomboid.enable = false;
+  myServices.valheim.enable = false;
 
   sops.age.keyFile = "/etc/age/host.key";
   sops.secrets = {
